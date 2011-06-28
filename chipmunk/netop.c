@@ -297,7 +297,7 @@ set_timeouts( int rsock, int ssock,
             return ERR_INTERNAL;
         }
         TRACE( (void)tmfprintf (g_flog, "socket %d: SEND timeout set to %ld sec, %ld usec\n",
-                rsock, rtv.tv_sec, rtv.tv_usec) );
+                rsock, stv.tv_sec, stv.tv_usec) );
     }
 
     return rc;
