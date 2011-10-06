@@ -171,6 +171,8 @@ Build 20 (18-Jun-2011)
     (*) Added Content-type entry to HTTP response;
     (*) Added conditional compilation of udpxrec - use NO_UDPXREC=yes make [mode] to *NOT* build udpxrec into the udpxy
         binary
+Patch-1 20 (06-Oct-2011)
+    (*) FIXED: any error in accept() makes udpxy quit (disregarding exceptions such as EINTR and ECONNABORTED)
 
 # __EOF__
 

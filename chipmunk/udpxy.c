@@ -867,7 +867,7 @@ static int
 server_loop( const char* ipaddr, int port,
              const char* mcast_addr )
 {
-    int                 rc, maxfd,
+    int                 rc, maxfd, err,
                         new_sockfd;
     struct sockaddr_in  cliaddr;
     struct in_addr      mcast_inaddr;
@@ -940,14 +940,21 @@ server_loop( const char* ipaddr, int port,
         do {
             new_sockfd = accept( srv.lsockfd, (struct sockaddr*)&cliaddr, &addrlen );
             if (-1 != new_sockfd) break;
-            mperror( g_flog, errno,  "%s: accept", __func__ );
+
+            err = errno;
+            mperror( g_flog, err,  "%s: accept [errno=%d]", __func__, err);
 
             /* loop for these two, terminate for others */
-            if ((ECONNABORTED != errno) || (EINTR != errno)) break;
+            if ((ECONNABORTED != err) && (ECONNRESET != err)
+                    && (EINTR != err)) {
+                TRACE( (void)tmfputs ("critical accept error - quitting\n", g_flog) );
+                break;
+            }
             if( get_childexit() ) {
                 wait_terminated( &srv );
             }
-        } while (!must_quit() && -1==new_sockfd);
+            TRACE( (void)tmfprintf (g_flog, "re-trying to accept: quit=%d, fd=%d\n", g_quit, new_sockfd));
+        } while (!must_quit() && (-1==new_sockfd));
 
         /* kill signal or fatal error */
         if ((-1==new_sockfd) || must_quit()) break;
