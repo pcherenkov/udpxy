@@ -197,8 +197,12 @@ get_sizeval( const char* envar, const ssize_t deflt );
 /* retrieve/reset string representation of pid,
  */
 const char*
-get_pidstr( int reset );
+get_pidstr( int reset, const char* pfx );
 
+/* retrieve system info string
+ */
+const char*
+get_sysinfo (int* perr);
 
 #ifdef __cplusplus
 }

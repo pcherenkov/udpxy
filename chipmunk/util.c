@@ -19,6 +19,8 @@
  */
 
 #include <sys/stat.h>
+#include <sys/utsname.h>
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -38,6 +40,8 @@
 #include "util.h"
 #include "mtrace.h"
 #include "osdef.h"
+
+static char s_sysinfo [80] = "\0";
 
 /* write buffer to a file
  *
@@ -523,7 +527,7 @@ tmfprintf( FILE* stream, const char* format, ... )
     char tstamp[ 80 ] = {'\0'};
     size_t ts_len = sizeof(tstamp) - 1;
     struct timeval tv_now;
-    const char* pidstr = get_pidstr( NO_RESET );
+    const char* pidstr = get_pidstr( NO_RESET, NULL );
 
     (void)gettimeofday( &tv_now, NULL );
 
@@ -563,7 +567,7 @@ tmfputs( const char* s, FILE* stream )
     char tstamp[ 80 ] = {'\0'};
     size_t ts_len = sizeof(tstamp) - 1;
     struct timeval tv_now;
-    const char* pidstr = get_pidstr( NO_RESET );
+    const char* pidstr = get_pidstr( NO_RESET, NULL );
 
     (void)gettimeofday( &tv_now, NULL );
 
@@ -1004,18 +1008,47 @@ get_sizeval( const char* envar, const ssize_t deflt )
 /* retrieve/reset string representation of pid
  */
 const char*
-get_pidstr( int reset )
+get_pidstr( int reset, const char* pfx )
 {
     static char pidstr[ 24 ];
     static pid_t pid = 0;
 
     if( 1 == reset || (0 == pid) ) {
         pid = getpid();
-        (void) snprintf( pidstr, sizeof(pidstr), "%d", pid );
+        if (pfx) {
+            (void) snprintf (pidstr, sizeof(pidstr)-1, "%s(%d)", pfx, pid);
+        } else {
+            (void) snprintf (pidstr, sizeof(pidstr)-1, "%d", pid );
+        }
+        pidstr [sizeof(pidstr)-1] = '\0';
     }
 
     return pidstr;
 }
+
+
+/* retrieve system info string
+ */
+const char*
+get_sysinfo (int* perr)
+{
+    struct utsname uts;
+    int rc = 0;
+
+    if (s_sysinfo[0]) return s_sysinfo;
+
+    (void) memset (&uts, 0, sizeof(uts));
+    errno = 0; rc = uname (&uts);
+    if (perr) *perr = errno;
+
+    if (0 == rc) {
+        s_sysinfo [sizeof(s_sysinfo)-1] = '\0';
+        (void) snprintf (s_sysinfo, sizeof(s_sysinfo)-1, "%s %s %s",
+            uts.sysname, uts.release, uts.machine);
+    }
+    return s_sysinfo;
+}
+
 
 /* __EOF__ */
 

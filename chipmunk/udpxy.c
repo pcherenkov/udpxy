@@ -82,6 +82,12 @@ extern const char  BUILD_TYPE[];
 extern FILE*  g_flog;
 extern volatile sig_atomic_t g_quit;
 
+typedef struct tmfd {
+    int     fd;
+    time_t  atime;
+} tmfd_t;
+
+
 /* globals
  */
 
@@ -92,10 +98,11 @@ struct udpxy_opt    g_uopt;
 
 static volatile sig_atomic_t g_childexit = 0;
 
+static const int PID_RESET = 1;
 
 /*********************************************************/
 
-/* handler for signals requestin application exit
+/* handler for signals to perform a graceful exit
  */
 static void
 handle_quitsigs(int signo)
@@ -103,9 +110,7 @@ handle_quitsigs(int signo)
     g_quit = (sig_atomic_t)1;
     (void) &signo;
 
-    TRACE( (void)tmfprintf( g_flog,
-                "*** Caught SIGNAL %d in process=[%d] ***\n",
-                signo, getpid()) );
+    TRACE( (void)tmfprintf( g_flog, "*** Caught SIGNAL %d ***\n", signo ) );
     return;
 }
 
@@ -124,33 +129,45 @@ handle_sigchld(int signo)
     (void) &signo;
     g_childexit = (sig_atomic_t)1;
 
-    TRACE( (void)tmfprintf( g_flog, "*** Caught SIGCHLD in process=[%d] ***\n",
-                getpid()) );
+    TRACE( (void)tmfprintf( g_flog, "*** Caught SIGCHLD (%d) ***\n", signo ) );
     return;
 }
 
-
+/*
 static int get_childexit()      { return g_childexit; }
-
+*/
 
 /* clear SIGCHLD flag and adjust context if needed
  */
 static void
 wait_children( struct server_ctx* ctx, int options )
 {
-    int status;
+    int status, n = 0;
     pid_t pid;
 
     assert( ctx );
+    if (0 == g_childexit) {
+        TRACE( (void)tmfputs ("No children exited since last check\n",
+                g_flog) );
+        return;
+    }
+
     g_childexit = 0;
 
+    TRACE( (void)tmfputs ("Waiting on exited children\n", g_flog) );
     while( 0 < (pid = waitpid( -1, &status, options )) ) {
         TRACE( (void)tmfprintf( g_flog, "Client [%d] has exited.\n", pid) );
         delete_client( ctx, pid );
+        ++n;
     }
 
     if( (-1 == pid) && ( ECHILD != errno ) ) {
         mperror(g_flog, errno, "%s: waitpid", __func__);
+    }
+
+    if (n > 0) {
+        TRACE( (void)tmfprintf (g_flog, "Cleaned up %d children, "
+            "%ld still running\n", n, (long)(ctx->clmax - ctx->clfree)) );
     }
 
     return;
@@ -167,6 +184,22 @@ wait_all( struct server_ctx* ctx ) { wait_children( ctx, 0 ); }
  */
 static void
 wait_terminated( struct server_ctx* ctx ) { wait_children( ctx, WNOHANG ); }
+
+
+/* print out array of accepted socket fd's */
+static void
+print_fds (FILE* fp, const char* msg, tmfd_t* asock, size_t len)
+{
+    size_t i;
+
+    (void) fprintf (fp, "%s [%ld]: ", msg, (long)len);
+    for (i = 0; i < len; ++i) {
+        (void) fprintf (fp, "%s%d", (i ? "," : ""), asock[i].fd);
+    }
+    fputc ('\n', fp);
+
+    return;
+}
 
 
 /* read HTTP request from sockfd, parse it into command
@@ -195,8 +228,13 @@ read_command( int sockfd, char* cmd, size_t clen,
         mperror(g_flog, rc, "%s - recv (%d)", __func__, rc);
         return rc;
     }
+    if (0 == hlen) {
+        (void) tmfprintf (g_flog, "%s: client closed socket [%d]\n",
+            __func__, sockfd);
+        return 1;
+    }
 
-    /* deep DEBUG - re-enable if needed */
+    /* DEBUG - re-enable if needed */
     TRACE( (void)tmfprintf( g_flog, "HTTP buffer [%ld bytes] received\n%s", (long)hlen, httpbuf ) );
     /* TRACE( (void) save_buffer( httpbuf, hlen, "/tmp/httpbuf.dat" ) ); */
 
@@ -461,6 +499,7 @@ relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
     size_t data_len = g_uopt.rbuf_len;
     struct rdata_opt ropt;
     time_t pause_time = 0, rfr_tm = time(NULL);
+    sigset_t ubset;
 
     const int ALLOW_PAUSES = get_flagval( "UDPXY_ALLOW_PAUSES", 0 );
 
@@ -473,6 +512,18 @@ relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
     struct tps_data tps;
 
     assert( ctx && mifaddr );
+
+    (void) sigemptyset (&ubset);
+    sigaddset (&ubset, SIGINT);
+    sigaddset (&ubset, SIGQUIT);
+    sigaddset (&ubset, SIGTERM);
+
+    /* restore the ability to receive *quit* signals */
+    rc = sigprocmask (SIG_UNBLOCK, &ubset, NULL);
+    if (0 != rc) {
+        mperror (g_flog, errno, "%s: sigprocmask", __func__);
+        return -1;
+    }
 
     /* NOPs to eliminate warnings in lean version */
     lrcv = t_delta - t_delta + lsent;
@@ -508,16 +559,12 @@ relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
             rc = send_http_response( dsockfd, 200, "OK" );
             if( 0 != rc ) break;
 
-            if ( ALLOW_PAUSES ) {
-                /* timeshift: to detect PAUSE make destination
-                * socket non-blocking
-                */
-                #define SET_NBLOCK      1
-                rc = set_nblock( dsockfd, SET_NBLOCK );
-                if( 0 != rc ) break;
-                TRACE( (void)tmfprintf( g_flog,
-                    "Socket [%d] set to non-blocking I/O\n", dsockfd ) );
-            }
+            /* timeshift: to detect PAUSE make destination
+            * socket non-blocking, otherwise make it blocking
+            * (since it might have been set unblocking earlier)
+            */
+            rc = set_nblock( dsockfd, (ALLOW_PAUSES ? 1 : 0) );
+            if( 0 != rc ) break;
         }
 
         data = malloc(data_len);
@@ -613,7 +660,7 @@ udp_relay( int sockfd, const char* param, size_t plen,
 
     uint16_t    port;
     pid_t       new_pid;
-    int         rc = 0, flags, PID_RESET = 1;
+    int         rc = 0, flags; 
     int         msockfd = -1, sfilefd = -1,
                 dfilefd = -1, srcfd = -1;
     char        dfile_name[ MAXPATHLEN ];
@@ -659,7 +706,7 @@ udp_relay( int sockfd, const char* param, size_t plen,
     TRACE( (void)tmfprintf( g_flog, "Client process=[%d] started "
                 "for socket=[%d]\n", getpid(), sockfd) );
 
-    (void) get_pidstr( PID_RESET );
+    (void) get_pidstr( PID_RESET, "c" );
 
     (void)close( ctx->lsockfd );
 
@@ -861,25 +908,246 @@ process_command( int new_sockfd, struct server_ctx* ctx,
 }
 
 
+static void
+accept_requests (int sockfd, tmfd_t* asock, size_t* alen)
+{
+    int                 rc = 0, new_sockfd = -1, err = 0, peer_port = -1,
+                        wmark = g_uopt.ss_rlwmark;
+    size_t              nmax = *alen, naccepted = 0;
+    struct sockaddr_in  cliaddr;
+    a_socklen_t         addrlen = sizeof (cliaddr);
+    char                peer_addr [128] = "#undef#";
+
+    while (naccepted < nmax) {
+        TRACE( (void)tmfputs ("Accepting new connection\n", g_flog) );
+
+        new_sockfd = accept (sockfd, (struct sockaddr*)&cliaddr, &addrlen );
+        if (-1 == new_sockfd) {
+            err = errno;
+            if ((EWOULDBLOCK == err) || (EAGAIN == err)) {
+                TRACE((void)tmfputs ("Nothing more to accept\n", g_flog));
+                rc = 0; break;
+            }
+            if ((ECONNABORTED == err) || (ECONNRESET == err) || (EPROTO == err)) {
+                TRACE( (void)tmfprintf (g_flog, "Connection aborted/reset "
+                    "at accept point, errno=%d\n", err) );
+                rc = 0; continue;
+            }
+
+            mperror(g_flog, err, "%s: accept", __func__);
+            rc = err; break;
+        }
+
+        if (0 != set_nblock (new_sockfd, 1)) {
+            (void) close (new_sockfd); /* TODO: error-aware close */
+            continue;
+        }
+        /*
+        if (0 != set_timeouts(new_sockfd, new_sockfd, g_uopt.sr_tmout, 0,
+            g_uopt.sw_tmout, 0)) {
+            (void) close (new_sockfd);
+            continue;
+        }
+        */
+        if (wmark > 0) {
+            if (0 != setsockopt (new_sockfd, SOL_SOCKET, SO_RCVLOWAT,
+                    (char*)&wmark, sizeof(wmark))) {
+                mperror (g_flog, errno, "%s: setsockopt SO_RCVLOWAT [%d]",
+                    __func__, wmark);
+                (void) close (new_sockfd); /* TODO: error-aware close */
+                continue;
+            } else {
+                TRACE( (void)tmfprintf (g_flog, "Receive LOW WATERMARK [%d] appleid "
+                    "to newly-accepted socket [%d]\n", wmark, new_sockfd) );
+            }
+        }
+
+        asock [naccepted].fd = new_sockfd;
+        asock [naccepted].atime = time (NULL);
+        ++naccepted;
+
+        (void) get_peerinfo (new_sockfd, peer_addr,
+                sizeof(peer_addr)-1, &peer_port);
+
+        TRACE( (void)tmfprintf( g_flog, "Accepted socket=[%d] from %s:%d "
+            "n=%ld/nmax=%ld\n", new_sockfd, peer_addr, peer_port,
+            (long)naccepted, (long)nmax) );
+    } /* while */
+
+    if (naccepted >= nmax) {
+        (void)tmfprintf (g_flog, "Accept limit max=[%d] reached, "
+            "%ld already accepted", (long)nmax, (long)naccepted);
+    }
+
+    *alen = naccepted;
+    TRACE( (void)tmfprintf (g_flog, "%s: Sockets accepted: [%ld]\n",
+        __func__, (long)naccepted));
+    return;
+}
+
+
+static void
+shrink_asock (tmfd_t* asock, size_t* alen, size_t nserved)
+{
+    size_t nmax = *alen;
+    long j = 0, v = 0;
+
+    (void) &print_fds;
+
+    /* uncomment to DEBUG
+    TRACE( print_fds (g_flog, "unshrunk accepted sockets", asock, *alen) );
+    */
+
+    (void) nserved;
+
+    for (; j < (long)nmax; ++j) {
+        if (-1 == asock[j].fd) {
+            ++v;
+            continue;
+        }
+
+        if (v > 0) {
+            asock[j - v].fd = asock[j].fd;
+            asock[j - v].atime = asock[j].atime;
+            asock[j].fd = -1;
+        }
+    }
+
+    assert ((long)nserved == v);
+    *alen = nmax - (size_t)v;
+
+    TRACE ( (void)tmfprintf (g_flog, "%s: %ld shrunk, was %ld now %ld\n",
+        __func__, (long)v, (long)nmax, (long)*alen ) );
+
+    /* uncomment to DEBUG
+    TRACE( print_fds (g_flog, "remaining accepted sockets", asock, *alen) );
+    */
+}
+
+
+static void
+tmout_requests (tmfd_t* asock, size_t *alen)
+{
+    size_t nmax = *alen, i = 0, nout = 0;
+    time_t now = time (NULL);
+
+    TRACE( (void)tmfprintf (g_flog, "%s: BEGIN with %ld sockets\n",
+        __func__, (long)*alen) );
+
+    for (; i < nmax; ++i) {
+        assert ((asock[i].fd >= 0) && asock[i].atime);
+        if ((asock[i].atime + g_uopt.ssel_tmout) < now) {
+            TRACE( (void)tmfprintf (g_flog, "%s: timed out socket #%d [%d], "
+                "atime/now/tmout=%ld/%ld/%ld\n", __func__, (i+1), asock[i].fd,
+                (long)asock[i].atime, (long)now, g_uopt.ssel_tmout) );
+
+            (void) close (asock[i].fd);
+            asock[i].fd = -1;
+            ++nout;
+        }
+    }
+    shrink_asock (asock, alen, nout); /* will adjust alen */
+
+    TRACE( (void)tmfprintf (g_flog, "%s: END with %ld sockets\n",
+        __func__, (long)*alen) );
+    return;
+}
+
+static void
+process_requests (tmfd_t* asock, size_t *alen, fd_set* rset, struct server_ctx* srv)
+{
+    size_t nmax = *alen, i = 0, nserved = 0;
+    int rc = 0, served = 0;
+    char param[ 128 ] = "\0";
+    time_t now = time (NULL);
+
+    /* uncomment to DEBUG */
+    TRACE( print_fds (g_flog, "pre-process sockets", asock, nmax) );
+
+    for (; i < nmax; ++i, served = 0) {
+        assert (asock[i].fd >= 0);
+        assert (asock[i].atime > 0);
+
+        do {
+            /* not selected - yet try to time it out */
+            if (!FD_ISSET(asock[i].fd, rset)) {
+                if ((asock[i].atime + g_uopt.ssel_tmout) < now) {
+                    TRACE( (void)tmfprintf (g_flog,
+                        "%s: accepted socket [%ld] timed out\n",
+                        __func__, (long)asock[i].fd) );
+                    ++served;  /* timed out - must close */
+                }
+                break;
+            }
+
+            /* selected */
+            TRACE( (void)tmfprintf (g_flog, "acting on accepted socket "
+                "[%d] (%d/%d)\n", asock[i].fd, i+1, nmax) );
+
+            ++served;  /* selected - must close regardless */
+            rc = read_command( asock[i].fd, srv->cmd, sizeof(srv->cmd),
+                    param, sizeof(param) );
+            if( 0 != rc ) break;
+
+            rc = process_command (asock[i].fd, srv, param, sizeof(param) );
+        } while (0);
+
+        if (0 != rc) {
+            TRACE( (void)tmfprintf (g_flog, "error [%d] processing "
+                "client socket [%d]\n", rc, asock[i]));
+        }
+
+        TRACE( (void)tmfprintf (g_flog, "%s: %s accepted "
+            "socket [%d]\n", __func__, (served ? "closing" : "skipping"),
+            asock[i].fd) );
+
+        if (served) {
+            (void) close (asock[i].fd);
+            asock[i].fd = -1;
+            ++nserved;
+        }
+    } /* for */
+
+    TRACE( (void)tmfprintf (g_flog, "Processed [%ld/%ld] accepted sockets\n",
+        (long)nserved, (long)nmax) );
+    TRACE( print_fds (g_flog, "newly-accepted sockets", asock, nmax) );
+
+    if (nserved >= nmax) {
+        *alen = 0;
+        TRACE( (void)tmfputs ("All accepted sockets processed\n", g_flog) );
+    }
+    else {
+        shrink_asock (asock, alen, nserved);
+    }
+
+    return;
+}
+
+
 /* process client requests
  */
 static int
 server_loop( const char* ipaddr, int port,
              const char* mcast_addr )
 {
-    int                 rc, maxfd, err,
-                        new_sockfd;
-    struct sockaddr_in  cliaddr;
+    int                 rc, maxfd, err, nrdy, i;
     struct in_addr      mcast_inaddr;
-    char                param[ 128 ];
     struct server_ctx   srv;
-    a_socklen_t         addrlen;
     fd_set              rset;
+    struct timespec     tmout, *ptmout = NULL;
+    tmfd_t              *asock = NULL;
+    size_t              n = 0, nasock = 0, max_nasock = LQ_BACKLOG;
+    sigset_t            oset, bset;
 
     assert( (port > 0) && mcast_addr && ipaddr );
 
-    (void)tmfprintf( g_flog, "Starting server [%d]; capacity=[%u] clients\n",
-                        getpid(), g_uopt.max_clients );
+    (void)tmfprintf( g_flog, "Server is starting up, max clients = [%u]\n",
+                        g_uopt.max_clients );
+    asock = calloc (max_nasock, sizeof(*asock));
+    if (!asock) {
+        mperror (g_flog, ENOMEM, "%s: calloc", __func__);
+        return ERR_INTERNAL;
+    }
 
     if( 1 != inet_aton(mcast_addr, &mcast_inaddr) ) {
         mperror(g_flog, errno, "%s: inet_aton", __func__);
@@ -893,115 +1161,120 @@ server_loop( const char* ipaddr, int port,
     srv.snd_tmout = RLY_SOCK_TIMEOUT;
     srv.mcast_inaddr = mcast_inaddr;
 
-    if( 0 != (rc = setup_listener( ipaddr, port, &srv.lsockfd )) )
+    /* NB: server socket is non-blocking! */
+    if( 0 != (rc = setup_listener( ipaddr, port, &srv.lsockfd,
+            g_uopt.lq_backlog )) ) {
         return rc;
+    }
 
-    new_sockfd = -1;
+    sigemptyset (&bset);
+    sigaddset (&bset, SIGINT);
+    sigaddset (&bset, SIGQUIT);
+    sigaddset (&bset, SIGCHLD);
+    sigaddset (&bset, SIGTERM);
+
+    tmout.tv_sec = g_uopt.ssel_tmout;
+    tmout.tv_nsec = 0;
+
+    if (ptmout) {
+        TRACE( (void)tmfprintf (g_flog, "select() timeout set to "
+            "[%ld] seconds\n", tmout.tv_sec) );
+    }
+
+    (void) sigprocmask (SIG_BLOCK, &bset, &oset);
+
     TRACE( (void)tmfprintf( g_flog, "Entering server loop\n") );
-
-    while( !must_quit() ) {
-        if( get_childexit() ) {
-            wait_terminated( &srv );
-        }
-
+    while (1) {
         FD_ZERO( &rset );
         FD_SET( srv.lsockfd, &rset );
         FD_SET( srv.cpipe[0], &rset );
 
-        TRACE( (void)tmfprintf( g_flog, "Server is waiting for input: "
-                    "socket=[%d], pipe=[%d]\n",
-                    srv.lsockfd, srv.cpipe[0]) );
-
         maxfd = (srv.lsockfd > srv.cpipe[0] ) ? srv.lsockfd : srv.cpipe[0];
-        rc = select( maxfd + 1, &rset, NULL, NULL, NULL );
-        if( -1 == rc ) {
-            if( EINTR == errno ) {
-                if( must_quit() ) {
-                    TRACE( (void)tmfputs( "Server must quit.\n", g_flog ) );
-                    rc = 0;
-                    break;
-                }
-                else
-                    continue;
+        for (i = 0; (size_t)i < nasock; ++i) {
+            assert (asock[i].fd >= 0);
+            FD_SET (asock[i].fd, &rset);
+            if (asock[i].fd > maxfd) maxfd = asock[i].fd;
+        }
+
+        /* if there are accepted sockets - apply specified time-out
+         */
+        ptmout = ((nasock > 0) && (g_uopt.ssel_tmout > 0)) ? &tmout : NULL;
+
+        TRACE( (void)tmfprintf( g_flog, "Waiting for input from [%ld] fd's, "
+            "%s timeout\n", (long)(2 + nasock), (ptmout ? "with" : "NO")));
+
+        nrdy = pselect (maxfd + 1, &rset, NULL, NULL, ptmout, &oset);
+        err = errno;
+
+        if( must_quit() ) {
+            TRACE( (void)tmfputs( "Must quit now\n", g_flog ) );
+            rc = 0; break;
+        }
+        wait_terminated( &srv );
+
+        if( nrdy < 0 ) {
+            if (EINTR == err) {
+                TRACE( (void)tmfputs ("INTERRUPTED, yet "
+                        "will continue.\n", g_flog)  );
+                rc = 0; continue;
             }
 
-            mperror( g_flog, errno, "%s: select", __func__ );
+            mperror( g_flog, err, "%s: select", __func__ );
             break;
         }
 
+        TRACE( (void)tmfprintf (g_flog, "Got %ld requests\n", (long)nrdy) );
+        if (0 == nrdy) {    /* time-out */
+            tmout_requests (asock, &nasock);
+            rc = 0; continue;
+        }
+
         if( FD_ISSET(srv.cpipe[0], &rset) ) {
-            if( 0 != tpstat_read( &srv ) )
-                break;
-            else
-                continue;
+            (void) tpstat_read( &srv );
+            if (--nrdy <= 0) continue;
         }
 
-        addrlen = sizeof(cliaddr);
-        do {
-            new_sockfd = accept( srv.lsockfd, (struct sockaddr*)&cliaddr, &addrlen );
-            if (-1 != new_sockfd) break;
-
-            err = errno;
-            mperror( g_flog, err,  "%s: accept [errno=%d]", __func__, err);
-
-            /* loop for these two, terminate for others */
-            if ((ECONNABORTED != err) && (ECONNRESET != err)
-                    && (EINTR != err)) {
-                TRACE( (void)tmfputs ("critical accept error - quitting\n", g_flog) );
-                break;
-            }
-            if( get_childexit() ) {
-                wait_terminated( &srv );
-            }
-            TRACE( (void)tmfprintf (g_flog, "re-trying to accept: quit=%d, fd=%d\n", g_quit, new_sockfd));
-        } while (!must_quit() && (-1==new_sockfd));
-
-        /* kill signal or fatal error */
-        if ((-1==new_sockfd) || must_quit()) break;
-
-        TRACE( (void)tmfprintf( g_flog, "Accepted socket=[%d]\n",
-                    new_sockfd) );
-
-        /* service client's request:
-         *   should a non-critical error occur, bail out on the client
-         *   but do not stop the server
-         */
-        do {
-            rc = set_timeouts(new_sockfd, new_sockfd,
-                    g_uopt.sr_tmout, 0, g_uopt.sw_tmout, 0);
-            if( 0 != rc ) break;
-
-            rc = read_command( new_sockfd, srv.cmd, sizeof(srv.cmd),
-                    param, sizeof(param) );
-            if( 0 != rc ) break;
-
-            rc = process_command( new_sockfd, &srv, param, sizeof(param) );
+        if ((0 < nasock) &&
+                 (0 < (nrdy - (FD_ISSET(srv.lsockfd, &rset) ? 1 : 0)))) {
+            process_requests (asock, &nasock, &rset, &srv);
+            /* n now contains # (yet) unprocessed accepted sockets */
         }
-        while(0);
 
-        (void) close( new_sockfd );
-        TRACE( (void)tmfprintf( g_flog, "Closed accepted socket [%d]\n",
-                    new_sockfd) );
-        new_sockfd = -1;
+        if (FD_ISSET(srv.lsockfd, &rset)) {
+            if (nasock >= max_nasock) {
+                (void) tmfprintf (g_flog, "Cannot accept sockets beyond "
+                    "the limit [%ld/%ld], skipping\n",
+                    (long)nasock, (long)max_nasock);
+            }
+            else {
+                n = max_nasock - nasock; /* append asock */
+                accept_requests (srv.lsockfd, &(asock[nasock]), &n);
+                nasock += n;
+            }
+        }
 
     } /* server loop */
 
-
     TRACE( (void)tmfprintf( g_flog, "Exited server loop\n") );
 
-    if( new_sockfd > 0 ) {
-        (void) close( new_sockfd );
+    for (i = 0; (size_t)i < nasock; ++i) {
+        if (asock[i].fd > 0) (void) close (asock[i].fd);
     }
+    free (asock);
 
+    /* receive additional (blocked signals) */
+    (void) sigprocmask (SIG_SETMASK, &oset, NULL);
     wait_terminated( &srv );
     terminate_all_clients( &srv );
     wait_all( &srv );
 
-    (void) close( srv.lsockfd );
+    if (0 != close( srv.lsockfd )) {
+        mperror (g_flog, errno, "server socket close");
+    }
 
     free_server_ctx( &srv );
 
-    (void)tmfprintf( g_flog, "Server [%d] exits rc=[%d]\n", getpid(), rc );
+    (void)tmfprintf( g_flog, "Server exits with rc=[%d]\n", rc );
     return rc;
 }
 
@@ -1009,9 +1282,9 @@ server_loop( const char* ipaddr, int port,
 static void
 usage( const char* app, FILE* fp )
 {
-    (void) fprintf(fp, "%s %s (%s %d) %s\n", app, VERSION, BUILD_TYPE, BUILDNUM,
-            COMPILE_MODE );
-    (void) fprintf(fp, "usage: %s [-vTS] [-a listenaddr] -p port "
+    (void) fprintf (fp, "%s %s (%s %d) %s [%s]\n", app, VERSION, BUILD_TYPE, BUILDNUM,
+            COMPILE_MODE, get_sysinfo(NULL));
+    (void) fprintf (fp, "usage: %s [-vTS] [-a listenaddr] -p port "
             "[-m mcast_ifc_addr] [-c clients] [-l logfile] "
             "[-B sizeK] [-n nice_incr]\n", app );
     (void) fprintf(fp,
@@ -1075,6 +1348,8 @@ udpxy_main( int argc, char* const argv[] )
     struct sigaction qact, iact, cact, oldact;
 
     extern const char g_udpxy_app[];
+
+    (void) get_pidstr( PID_RESET, "S" );
 
     rc = init_uopt( &g_uopt );
     while( (0 == rc) && (-1 != (ch = getopt(argc, argv, UDPXY_OPTMASK))) ) {
@@ -1320,8 +1595,9 @@ udpxy_main( int argc, char* const argv[] )
         }
 
         (void) snprintf( udpxy_finfo, sizeof(udpxy_finfo),
-                "%s %s (build %d) %s", g_udpxy_app, VERSION, BUILDNUM,
-            COMPILE_MODE );
+                "%s %s (%s %d) %s [%s]", g_udpxy_app, VERSION,
+                BUILD_TYPE, BUILDNUM,
+            COMPILE_MODE, get_sysinfo(NULL) );
 
         syslog( LOG_NOTICE, "%s is starting\n",udpxy_finfo );
         TRACE( printcmdln( g_flog, udpxy_finfo, argc, argv ) );

@@ -71,6 +71,9 @@ init_uopt( struct udpxy_opt* uo )
                                 DHOLD_TIMEOUT );
     uo->sr_tmout        = get_timeval ( "UDPXY_SREAD_TMOUT", SRVSOCK_TIMEOUT  );
     uo->sw_tmout        = get_timeval ( "UDPXY_SWRITE_TMOUT", SRVSOCK_TIMEOUT );
+    uo->ssel_tmout      = get_timeval ( "UDPXY_SSEL_TMOUT", SSEL_TIMEOUT );
+    uo->lq_backlog      = (int) get_sizeval ("UDPXY_LQ_BACKLOG", LQ_BACKLOG);
+    uo->ss_rlwmark      = (int) get_sizeval ("UDPXY_SRV_RLWMARK", SRV_RLWMARK);
 
     uo->nosync_sbuf     = (u_short)get_flagval( "UDPXY_SSOCKBUF_NOSYNC", 0 );
     uo->nosync_dbuf     = (u_short)get_flagval( "UDPXY_DSOCKBUF_NOSYNC", 0 );
