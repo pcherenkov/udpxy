@@ -26,6 +26,7 @@
 #include <net/if.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/select.h>
 
 #include <netinet/in.h>
 #include <sys/time.h>
