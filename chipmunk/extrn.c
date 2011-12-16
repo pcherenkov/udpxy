@@ -61,6 +61,10 @@ const int BUILDNUM =
 #include "BUILD"
 ;
 
+const int PATCH =
+#include "PATCH"
+;
+
 const char BUILD_TYPE[] =
 #include "BLDTYPE"
 ;

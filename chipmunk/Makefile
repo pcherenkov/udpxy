@@ -86,6 +86,9 @@ BTYPE := `cat $(BTYPEFILE) | tr -d '"'`
 VERSIONFILE = VERSION
 VERSION := `cat $(VERSIONFILE) | tr -d '"'`
 
+PATCHFILE = PATCH
+PATCHNO := `cat $(PATCHFILE)`
+
 CHANGEFILE := CHANGES
 READMEFILE := README
 
@@ -94,7 +97,7 @@ DOCFILES := doc/udpxy-manual-RU.rtf
 INSTALLROOT := /usr/local
 
 ARCDIR = ..
-ARCFILE := $(ARCDIR)/$(EXEC).$(VERSION)-$(BTYPE)$(BUILDNO).tgz
+ARCFILE := $(ARCDIR)/$(EXEC).$(VERSION)-$(BUILDNO).$(PATCHNO)-$(BTYPE).tgz
 
 COMMON_OPT :=
 ifneq (yes,$(NO_UDPXREC))

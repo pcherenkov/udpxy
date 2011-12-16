@@ -35,6 +35,19 @@
 #include "util.h"
 #include "mtrace.h"
 
+/* data-stream format type */
+enum {
+    UPXDT_FIRST   = -1,
+
+    UPXDT_UNKNOWN,     /* no assumptions */
+    UPXDT_TS,          /* MPEG-TS */
+    UPXDT_RTP_TS,      /* RTP over MPEG-TS */
+    UPXDT_UDS,         /* UDS file format */
+    UPXDT_RAW,         /* read AS-IS */
+
+    UPXDT_LAST
+};
+
 extern FILE* g_flog;
 
 static const size_t TS_SEG_LEN = 188;
@@ -49,7 +62,7 @@ fmt2str( upxfmt_t fmt )
 {
     int ifmt = fmt;
 
-    assert( (ifmt > (int)DT_FIRST) && (ifmt < (int)DT_LAST) );
+    assert( (ifmt > UPXDT_FIRST) && (ifmt < UPXDT_LAST) );
     return upxfmt_NAME[ ifmt ];
 }
 
@@ -92,31 +105,31 @@ get_mstream_type( const char* data, size_t len, FILE* log )
         (void) tmfprintf( log, "%s: read [%ld] bytes,"
                 " not enough for RTP header\n", __func__,
                 (long)n );
-        return DT_UNKNOWN;
+        return UPXDT_UNKNOWN;
     }
 
     /* if the 1st byte has MPEG-TS signature - skip further checks */
     sig = data[0] & 0xFF;
     if( 0 == ts_sigcheck( sig, 0, 1, NULL /*log*/, __func__ ) )
-        return DT_TS;
+        return UPXDT_TS;
 
     /* if not RTP - quit */
     if( 0 == RTP_verify( data, RTP_HDR_SIZE, log ) )
-        return DT_UNKNOWN;
+        return UPXDT_UNKNOWN;
 
     /* check the first byte after RTP header - should be
      * TS signature to be RTP over TS */
 
     if( (0 != RTP_hdrlen( data, len, &hdrlen, log )) ||
         (len < hdrlen) ) {
-        return DT_UNKNOWN;
+        return UPXDT_UNKNOWN;
     }
 
     sig = data[ hdrlen ];
     if( 0 != ts_sigcheck( sig, 0, 1, log, __func__ ) )
-        return DT_UNKNOWN;
+        return UPXDT_UNKNOWN;
 
-    return DT_RTP_TS;
+    return UPXDT_RTP_TS;
 }
 
 
@@ -128,7 +141,7 @@ get_fstream_type( int fd, FILE* log )
 {
     ssize_t n = 0;
     off_t offset = 0, where = 0;
-    upxfmt_t dtype = DT_UNKNOWN;
+    upxfmt_t dtype = UPXDT_UNKNOWN;
     char* data = NULL;
 
     /* read in enough data to contain extended header
@@ -139,7 +152,7 @@ get_fstream_type( int fd, FILE* log )
 
     if( NULL == (data = malloc( len )) ) {
         mperror( log, errno, "%s: malloc", __func__ );
-        return DT_UNKNOWN;
+        return UPXDT_UNKNOWN;
     }
 
     do {
@@ -151,10 +164,10 @@ get_fstream_type( int fd, FILE* log )
         offset += n;
 
         dtype = get_mstream_type( data, len, log );
-        if( DT_UNKNOWN == dtype ) {
+        if( UPXDT_UNKNOWN == dtype ) {
             TRACE( (void)tmfprintf( log, "%s: file type is not recognized\n",
                         __func__ ) );
-            dtype = DT_UNKNOWN;
+            dtype = UPXDT_UNKNOWN;
             break;
         }
     } while(0);
@@ -163,13 +176,13 @@ get_fstream_type( int fd, FILE* log )
 
     if( n <= 0 ) {
         mperror( log, errno, "%s", __func__ );
-        return DT_UNKNOWN;
+        return UPXDT_UNKNOWN;
     }
 
     where = lseek( fd, (-1) * offset, SEEK_CUR );
     if( -1 == where ) {
         mperror( log, errno, "%s: lseek", __func__ );
-        return DT_UNKNOWN;
+        return UPXDT_UNKNOWN;
     }
 
     /*
@@ -385,21 +398,21 @@ read_frecord( int fd, char* data, const size_t len,
                 __func__, (u_int)where, (u_int)where ) );
     */
 
-    if( DT_UNKNOWN == *stream_type ) {
+    if( UPXDT_UNKNOWN == *stream_type ) {
         stype = get_fstream_type( fd, log );
 
-        if( DT_UNKNOWN == stype ) {
+        if( UPXDT_UNKNOWN == stype ) {
             (void)tmfprintf( log, "%s: Unsupported type\n", __func__ );
             return -1;
         }
 
         *stream_type = stype;
-    } /* DT_UNKNOWN */
+    } /* UPXDT_UNKNOWN */
 
-    if( DT_TS == stype ) {
+    if( UPXDT_TS == stype ) {
         nrd = read_ts_file( fd, data, len, log );
     }
-    else if( DT_RTP_TS == stype ) {
+    else if( UPXDT_RTP_TS == stype ) {
         nrd = read_rtp_file( fd, data, len, log );
     }
     else {
@@ -469,12 +482,12 @@ write_frecord( int fd, const char* data, size_t len,
     int fmt_ok = 0;
     const char *str_from = NULL, *str_to = NULL;
 
-    if( DT_UDS == dfmt ) {
+    if( UPXDT_UDS == dfmt ) {
         fmt_ok = 1;
         nwr = write_uds_record( fd, data, len, log );
     }
-    else if( DT_TS == dfmt ) {
-        if( DT_RTP_TS == sfmt ) {
+    else if( UPXDT_TS == dfmt ) {
+        if( UPXDT_RTP_TS == sfmt ) {
             fmt_ok = 1;
             nwr = write_rtp2ts( fd, data, len, log );
         }
@@ -595,13 +608,13 @@ read_packet( struct dstream_ctx* spc, int fd, char* buf, size_t len )
 
     /* if *RAW* data specified - read AS IS
      * and exit */
-    if( DT_RAW == spc->stype ) {
+    if( UPXDT_RAW == spc->stype ) {
         return read_buf( fd, buf, len, g_flog );
     }
 
     /* if it is (or *could* be) RTP, read only MTU bytes
      */
-    if( (spc->stype == DT_RTP_TS) || (spc->flags & F_CHECK_FMT) )
+    if( (spc->stype == UPXDT_RTP_TS) || (spc->flags & F_CHECK_FMT) )
         chunk_len = (len > spc->mtu) ? spc->mtu : len;
 
     if( spc->flags & F_FILE_INPUT ) {
@@ -618,16 +631,16 @@ read_packet( struct dstream_ctx* spc, int fd, char* buf, size_t len )
     }
 
     if( spc->flags & F_CHECK_FMT ) {
-        if( DT_RTP_TS == spc->stype ) {
+        if( UPXDT_RTP_TS == spc->stype ) {
             /* scattered data (to exclude RTP headers):
                 * use packet registry */
             spc->flags |= F_SCATTERED;
         }
-        else if( DT_TS == spc->stype ) {
+        else if( UPXDT_TS == spc->stype ) {
             spc->flags &= ~F_SCATTERED;
         }
         else {
-            spc->stype = DT_RAW;
+            spc->stype = UPXDT_RAW;
             TRACE( (void)tmfputs( "Unrecognized stream type\n", g_flog ) );
         }
 
@@ -770,17 +783,17 @@ init_dstream_ctx( struct dstream_ctx* ds, const char* cmd, const char* fname,
     ds->mtu = ETHERNET_MTU;
 
     if( NULL != fname ) {
-        ds->stype = DT_UNKNOWN;
+        ds->stype = UPXDT_UNKNOWN;
         ds->flags |= (F_CHECK_FMT | F_FILE_INPUT);
         TRACE( (void)tmfputs( "File stream, RTP check enabled\n", g_flog ) );
     }
     else if( 0 == strncmp( cmd, CMD_UDP, CMD_UDP_LEN ) ) {
-        ds->stype = DT_UNKNOWN;
+        ds->stype = UPXDT_UNKNOWN;
         ds->flags |= F_CHECK_FMT;
         TRACE( (void)tmfputs( "UDP stream, RTP check enabled\n", g_flog ) );
     }
     else if( 0 == strncmp( cmd, CMD_RTP, CMD_RTP_LEN ) ) {
-        ds->stype = DT_RTP_TS;
+        ds->stype = UPXDT_RTP_TS;
         ds->flags |= F_SCATTERED;
         TRACE( (void)tmfputs( "RTP (over UDP) stream assumed,"
                     " no checks\n", g_flog ) );

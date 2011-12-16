@@ -178,7 +178,9 @@ Build 21 (25-Nov-2011)
     (*) FIXED: accept() handled only one request per iteration (select notification);
     (*) Low watermark enforced for incoming requests;
 
-
+Patch 1 (13-Dec-2011)
+    (*) FIXED: "variable set but not used" warnings under gcc 4.6.1 
+    (*) FIXED: conflict with dirent.h (DT_UNKNOWN) resolved;
 
 # __EOF__
 

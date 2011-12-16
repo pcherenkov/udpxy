@@ -79,6 +79,7 @@ extern const char  COMPILE_MODE[];
 extern const char  VERSION[];
 extern const int   BUILDNUM;
 extern const char  BUILD_TYPE[];
+extern const int   PATCH;
 
 extern FILE*  g_flog;
 extern volatile sig_atomic_t g_quit;
@@ -527,7 +528,7 @@ relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
     }
 
     /* NOPs to eliminate warnings in lean version */
-    lrcv = t_delta - t_delta + lsent;
+    (void)&lrcv; (void)&lsent; (void)&t_delta;
 
     check_fragments( NULL, 0, 0, 0, 0, g_flog );
 
@@ -912,7 +913,7 @@ process_command( int new_sockfd, struct server_ctx* ctx,
 static void
 accept_requests (int sockfd, tmfd_t* asock, size_t* alen)
 {
-    int                 rc = 0, new_sockfd = -1, err = 0, peer_port = -1,
+    int                 new_sockfd = -1, err = 0, peer_port = -1,
                         wmark = g_uopt.ss_rlwmark;
     size_t              nmax = *alen, naccepted = 0;
     struct sockaddr_in  cliaddr;
@@ -927,16 +928,16 @@ accept_requests (int sockfd, tmfd_t* asock, size_t* alen)
             err = errno;
             if ((EWOULDBLOCK == err) || (EAGAIN == err)) {
                 TRACE((void)tmfputs ("Nothing more to accept\n", g_flog));
-                rc = 0; break;
+                break;
             }
             if ((ECONNABORTED == err) || (ECONNRESET == err) || (EPROTO == err)) {
                 TRACE( (void)tmfprintf (g_flog, "Connection aborted/reset "
                     "at accept point, errno=%d\n", err) );
-                rc = 0; continue;
+                continue;
             }
 
             mperror(g_flog, err, "%s: accept", __func__);
-            rc = err; break;
+            break;
         }
 
         if (0 != set_nblock (new_sockfd, 1)) {
@@ -1283,8 +1284,8 @@ server_loop( const char* ipaddr, int port,
 static void
 usage( const char* app, FILE* fp )
 {
-    (void) fprintf (fp, "%s %s (%s %d) %s [%s]\n", app, VERSION, BUILD_TYPE, BUILDNUM,
-            COMPILE_MODE, get_sysinfo(NULL));
+    (void) fprintf (fp, "%s %s-%d.%d (%s) %s [%s]\n", app, VERSION, BUILDNUM,
+            PATCH, BUILD_TYPE, COMPILE_MODE, get_sysinfo(NULL));
     (void) fprintf (fp, "usage: %s [-vTS] [-a listenaddr] -p port "
             "[-m mcast_ifc_addr] [-c clients] [-l logfile] "
             "[-B sizeK] [-n nice_incr]\n", app );
@@ -1596,8 +1597,8 @@ udpxy_main( int argc, char* const argv[] )
         }
 
         (void) snprintf( udpxy_finfo, sizeof(udpxy_finfo),
-                "%s %s (%s %d) %s [%s]", g_udpxy_app, VERSION,
-                BUILD_TYPE, BUILDNUM,
+                "%s %s-%d.%d (%s) %s [%s]", g_udpxy_app, VERSION,
+                BUILDNUM, PATCH, BUILD_TYPE,
             COMPILE_MODE, get_sysinfo(NULL) );
 
         syslog( LOG_NOTICE, "%s is starting\n",udpxy_finfo );

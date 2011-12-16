@@ -306,10 +306,10 @@ record()
     extern const char CMD_UDP[];
 
     /* NOPs to eliminate warnings in lean version */
+    (void)&t_delta; (void)&lrcv;
     t_delta = lrcv = lwr = 0; quit=0;
 
     check_fragments( NULL, 0, 0, 0, 0, g_flog );
-
 
     /* init */
     do {
