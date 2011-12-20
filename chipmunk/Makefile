@@ -97,7 +97,7 @@ DOCFILES := doc/udpxy-manual-RU.rtf
 INSTALLROOT := /usr/local
 
 ARCDIR = ..
-ARCFILE := $(ARCDIR)/$(EXEC).$(VERSION)-$(BUILDNO).$(PATCHNO)-$(BTYPE).tgz
+ARCFILE := $(ARCDIR)/$(EXEC).$(VERSION).$(BUILDNO)-$(PATCHNO)-$(BTYPE).tgz
 
 COMMON_OPT :=
 ifneq (yes,$(NO_UDPXREC))
@@ -184,9 +184,9 @@ incbuild:
 	@echo "Set build number to: `cat $(BUILDFILE)`"
 	@$(MAKE) touch
 
-DISTRO_DIR := udpxy-$(VERSION)-$(BUILDNO)
+DISTRO_DIR := udpxy-$(VERSION).$(BUILDNO)-$(PATCHNO)
 DISTRO_FILES := $(SRC) *.h Makefile *.txt $(BUILDFILE) $(BTYPEFILE) \
-	$(VERSIONFILE) $(CHANGEFILE) $(READMEFILE) $(DOCFILES)
+	$(VERSIONFILE) $(CHANGEFILE) $(READMEFILE) $(DOCFILES) $(PATCHFILE)
 
 distro:
 	@rm -fr $(DISTRO_DIR)
