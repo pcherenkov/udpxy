@@ -182,5 +182,9 @@ Patch 1 (13-Dec-2011)
     (*) FIXED: "variable set but not used" warnings under gcc 4.6.1 
     (*) FIXED: conflict with dirent.h (DT_UNKNOWN) resolved;
 
+Patch 2 (20-Dec-2011)
+    (*) FIXED: misc build errors and inconsistencies
+
+
 # __EOF__
 

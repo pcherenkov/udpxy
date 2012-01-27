@@ -142,7 +142,7 @@ lean:
 	@$(MAKE) all "COPT=${LEAN_OPT}"
 
 ndebug:
-	@echo -e "\nMaking a [lean] version (minimal size)\n"
+	@echo -e "\nMaking a [lean] version with debug info\n"
 	@$(MAKE) all "COPT=${LEAN_OPT} ${DEBUG_ON}"
 
 verify:
