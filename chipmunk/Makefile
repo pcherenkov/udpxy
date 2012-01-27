@@ -141,6 +141,10 @@ lean:
 	@echo -e "\nMaking a [lean] version (minimal size)\n"
 	@$(MAKE) all "COPT=${LEAN_OPT}"
 
+ndebug:
+	@echo -e "\nMaking a [lean] version (minimal size)\n"
+	@$(MAKE) all "COPT=${LEAN_OPT} ${DEBUG_ON}"
+
 verify:
 	@echo -e "\nVerifying all build targets\n"
 	@$(MAKE) clean
