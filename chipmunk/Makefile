@@ -113,7 +113,7 @@ UTILDIR := util
 MKDEP_SRC := $(UTILDIR)/mkdep.c
 MKDEP_TOOL := $(UTILDIR)/mkdep
 
-SRC := udpxy.c rparse.c util.c prbuf.c ifaddr.c ctx.c mkpg.c \
+SRC := udpxy.c sloop.c rparse.c util.c prbuf.c ifaddr.c ctx.c mkpg.c \
 	  rtp.c uopt.c dpkt.c netop.c extrn.c main.c
 ifneq (yes,$(NO_UDPXREC))
 SRC := $(SRC) udpxrec.c
@@ -149,6 +149,8 @@ verify:
 	@echo -e "\nVerifying all build targets\n"
 	@$(MAKE) clean
 	@$(MAKE) lean
+	@$(MAKE) clean
+	@$(MAKE) ndebug
 	@$(MAKE) clean
 	@$(MAKE) release
 	@$(MAKE) clean

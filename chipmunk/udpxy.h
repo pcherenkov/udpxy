@@ -68,6 +68,11 @@ typedef u_short flag_t;
 /* max size of string with IPv4 address */
 #define IPADDR_STR_SIZE 16
 
+typedef struct tmfd {
+    int     fd;
+    time_t  atime;
+} tmfd_t;
+
 #endif /* UDPXY_H_0110081654 */
 
 /* __EOF__ */
