@@ -35,26 +35,26 @@
 #include "util.h"
 #include "mtrace.h"
 
-/* data-stream format type */
-enum {
-    UPXDT_FIRST   = -1,
-
-    UPXDT_UNKNOWN,     /* no assumptions */
-    UPXDT_TS,          /* MPEG-TS */
-    UPXDT_RTP_TS,      /* RTP over MPEG-TS */
-    UPXDT_UDS,         /* UDS file format */
-    UPXDT_RAW,         /* read AS-IS */
-
-    UPXDT_LAST
-};
-
 extern FILE* g_flog;
 
 static const size_t TS_SEG_LEN = 188;
 
-static const char* upxfmt_NAME[] = {
-    "UNKNOWN", "MPEG-TS", "RTP-TS", "UDPXY-UDS"
+/* data-stream format type */
+enum {
+    UPXDT_UNKNOWN = 0,     /* no assumptions */
+    UPXDT_TS,          /* MPEG-TS */
+    UPXDT_RTP_TS,      /* RTP over MPEG-TS */
+    UPXDT_UDS,         /* UDS file format */
+    UPXDT_RAW          /* read AS-IS */
 };
+static const char* upxfmt_NAME[] = {
+    "UNKNOWN",
+    "MPEG-TS",
+    "RTP-TS",
+    "UDPXY-UDS",
+    "RAW"
+};
+static const int UPXDT_LEN = sizeof(upxfmt_NAME) / sizeof(upxfmt_NAME[0]);
 
 
 const char*
@@ -62,7 +62,7 @@ fmt2str( upxfmt_t fmt )
 {
     int ifmt = fmt;
 
-    assert( (ifmt > UPXDT_FIRST) && (ifmt < UPXDT_LAST) );
+    assert( (ifmt >= 0 ) && (ifmt < UPXDT_LEN) );
     return upxfmt_NAME[ ifmt ];
 }
 

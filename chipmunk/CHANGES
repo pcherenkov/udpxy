@@ -185,6 +185,9 @@ Patch 1 (13-Dec-2011)
 Patch 2 (20-Dec-2011)
     (*) FIXED: misc build errors and inconsistencies
 
+Patch 4 (9-Feb-2012)
+    (*) FIXED: SIGSEGV caused by dpkt.c:upxfmt_NAME[] having less members than indexes used (RAW was missing)
+    (*) rdebug (release with debug symbols), ldebug (lean with debug symbols) targets added
 
 # __EOF__
 
