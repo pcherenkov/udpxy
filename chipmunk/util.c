@@ -356,8 +356,10 @@ write_buf( int fd, const char* data, const ssize_t len, FILE* log )
     }
 
     if( nwr <= 0 ) {
-        if( log )
+        if( log && (errno != EPIPE) )
             mperror( log, errno, "%s: write", __func__ );
+        else if( log )
+            TRACE( mperror( log, errno, "%s: write", __func__ ) );
         return error;
     }
 
