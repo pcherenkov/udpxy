@@ -27,8 +27,17 @@
             <p><i>udpxy</i> is designed to run on devices with limited (compared to modern PC's) resources. The very first build was to run on a router with a 100 MHz CPU and 32Mb of RAM - and today's build can still run on that kind of device. The focus is to keep it <i>simple</i> and <i>compact</i> and the memory footprint - <i>small</i>.</p>
 
             </p>Most builds have been known to compile and run on Linux 2.4, 2.6 and 3.0, and FreeBSD from version 5.5 and up, on a variety of platforms (x86, amd64, MIPS, ARM); some builds haven been tested on PA-RISC - just to ascertain that <i>udpxy</i> runs there too. Generally, there are no OS/hardware restrictions (other than <i>POSIX compliance</i>) or dependencies. Linux and BSD derivatives are the primary build targets and, thus, receive the most of attention and support.</p>
-            <h3>News, rumors and updates:</h3>
-            <p>This site coming online is the biggest news so far, and so is the udpxy forum where everyone is welcome to register and discuss udpxy-related matters.</p>
+            <h3>Feature list :</h3>
+            <ul>
+                <li>Lightweight: less than 100K in size (if compiled in "lean" mode);</li>
+                <li>Portable: builds on almost any POSIX-compliant OS, no hardware dependencies imposed;
+                <li>Resource-efficient: runs on devices with limited resources (RAM, CPU);</li>
+                <li>UDP-to-TCP: UDP multicast in, TCP unicast out;</li>
+                <li>RTP stripping: RTP over MPEG-TS in, plain MPEG-TS out;</li>
+                <li>Built-in video recorder: outbound stream recorded on schedule (through <i>udpxrec</i>);</li>
+                <li>Web-enabled: web-based control and display of status and traffic statistics;</li>
+                <li>Highly tunable: message queue and buffer control;</li>
+            </ul>
             <div id="footer">
                 <p>Copyright &copy; 2012 Pavel V. Cherenkov</p>
             </div> <!-- footer -->
