@@ -8,7 +8,7 @@
     <meta name="description" content="udpxy: UDP to HTTP (multicast to unicast) fast and lightweight relay daemon. It is recognized as the definite POSIX-platform open-source IPTV-oriented solution for unicast HTTP streaming." />
     <meta name="keywords" content="UDP to HTTP relay daemon IPTV unicast streaming" />
     <link rel="stylesheet" type="text/css" href="udpxy.css" />
-    <title>udpxy - Features</title>
+    <title>udpxy - HOWTOs</title>
     <!-- base href="http://www.udpxy.com" /-->
 </head>
 <body>
@@ -16,27 +16,32 @@
         <img src="images/udpxy_hdbar1.jpg" id="logo" alt="logo" \>
         <div id="navmenu">
             <a href="index.html" title="Front page">Home</a>
-            <a href="features.html" title="Features"><b>Features</b></a>
+            <a href="features.html" title="Features">Features</a>
             <a href="http://sourceforge.net/projects/udpxy" title="Download udpxy">Download</a>
             <a href="faq.html" title="Frequently asked questions">FAQ</a>
-            <a href="howtos.html" title="HOWTO guides">HOWTOs</a>
+            <a href="howto.html" title="HOWTO guides"><b>HOWTOs</b></a>
             <a href="support.html" title="How to get support">Support</a>
             <a href="www.udpxy.com/forum" title="Discussion forum">Forum</a>
         </div> <!-- navmenu -->
         <div id="content">
-            <div id="features">
-            <h3>Features:</h3>
+            <div id="howto-txt">
+            <h3>How to build and install udpxy using GNU gcc compiler:</h3>
+            <p>Untar the *.tgz source distribution into a directory of your choice by running:</p>
+            <kbd>tar -xzvf udpxy.X.Y-ZZ.tgz or gzip -dc udpxy.X.Y-ZZ.tgz | tar -xvf -</kbd>
+            <p> Make sure that <kbd>GNU make</kbd> (<kbd>gmake</kbd> under BSD) and <kbd>gcc (version &gt;=3.x)</kbd> are available.</p>
+
+            <p><kbd>make</kbd> targets are:
             <ul>
-                <li><b>Lightweight</b>: less than 100K in size (if compiled in "lean" mode);</li>
-                <li><b>Portable</b>: builds on almost any POSIX-compliant OS, no hardware dependencies imposed;</li>
-                <li><b>Resource-efficient</b>: runs on devices with limited resources (RAM, CPU);</li>
-                <li><b>UDP-to-TCP</b>: UDP multicast in, TCP unicast out;</li>
-                <li><b>RTP stripping</b>: RTP over MPEG-TS in, plain MPEG-TS out;</li>
-                <li><b>Built-in video recorder</b>: outbound stream recorded on schedule (through <i>udpxrec</i>);</li>
-                <li><b>Web-enabled</b>: web-based control and display of status and traffic statistics;</li>
-                <li><b>Highly tunable</b>: message queue and buffer size controlled by command-line switches;</li>
+                <li><b>debug</b>: include asserts, debug symbols, verbose mode available;</li>
+                <li><b>release</b>: no asserts, no debug symbols, verbose mode available;</li>
+                <li><b>lean</b>: the smallest size, no asserts, no debug symbols, no verbose mode;</li>
             </ul>
-            </div> <!-- features -->
+
+            <p>Running <kbd>make</kbd> without specifying a target will build the <b>release</b> version of udpxy.</p>
+            <p>Once <kbd>make</kbd> has succeeded, the resulting <i>udpxy</i> executable file could be
+                copied to a location of one's choice and run from there - no additional
+                installation steps are required.</p>
+            </div> <!-- howto-txt -->
             <div id="footer">
                 <p>Copyright &copy; 2012 Pavel V. Cherenkov</p>
             </div> <!-- footer -->

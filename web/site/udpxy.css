@@ -51,7 +51,7 @@ p {
     text-decoration: none;
     color: #505048;
     padding: 2px;
-    font-size: medium;
+    font-size: small;
     padding-left: 16px;
 }
 
@@ -63,7 +63,7 @@ p {
 }
 
 #footer {
-    color: 404060;
+    color: #404060;
     font-size: x-small;
     border-top: 1px solid #909090;
     margin-top: 30px;
@@ -72,4 +72,76 @@ p {
 #footer p {
     text-align: center;
 }
+
+code {
+    font-family: courier,courier-new,fixed;
+    white-space: pre;
+}
+
+kdb {
+    font-size: 80%;
+    white-space: pre;
+    overflow: auto;
+}
+
+#support-txt p {
+    text-align: justify;
+    font-size: 0.9em;
+    font-family: verdana, arial, sans-serif;
+    color: #202040;
+}
+
+#support-txt h3 {
+    color: #702020;
+    font-weight: 1.5em;
+    font-family: sans-serif;
+}
+
+#howto-txt p {
+    text-align: justify;
+    font-size: 0.9em;
+    font-family: verdana, arial, sans-serif;
+    color: #202040;
+}
+
+#howto-txt h3 {
+    color: #202070;
+    font-weight: 1.5em;
+    font-family: sans-serif;
+}
+
+
+#faq-txt h3 {
+    color: #603030;
+    font-weight: 1.5em;
+    font-family: sans-serif;
+}
+
+#faq-txt p {
+    text-align: justify;
+    font-size: 0.9em;
+    font-family: verdana, arial, sans-serif;
+    color: #203030;
+}
+
+
+#features li {
+    font-size: 0.9em;
+    font-family: verdana, arial, sans-serif;
+    padding: 5px;
+    color: #202050;
+}
+
+#features b {
+    color: #307030;
+}
+
+#features h3 {
+    color: #202070;
+    font-weight: 1.5em;
+    font-family: sans-serif;
+}
+
+
+/* __EOF__ */
 
