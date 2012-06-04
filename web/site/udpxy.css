@@ -82,6 +82,9 @@ kdb {
     overflow: auto;
 }
 
+#main-txt {
+    margin-right: 25px;
+}
 
 #main-txt h3 {
     color: #203070;
@@ -97,6 +100,10 @@ kdb {
     color: #202040;
 }
 
+#support-txt {
+    margin-right: 25px;
+}
+
 #support-txt p {
     text-align: justify;
     font-size: 0.9em;
@@ -108,6 +115,10 @@ kdb {
     color: #702020;
     font-weight: 1.5em;
     font-family: sans-serif;
+}
+
+#howto-txt {
+    margin-right: 25px;
 }
 
 #howto-txt p {
@@ -123,6 +134,9 @@ kdb {
     font-family: sans-serif;
 }
 
+#faq-txt {
+    margin-right: 25px;
+}
 
 #faq-txt h3 {
     color: #603030;
