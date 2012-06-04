@@ -6,7 +6,7 @@ body {
 }
 
 #front_page {
-    margin: 0px;
+    margin: 5px;
     border-left: 1px solid black;
     border-right: 1px solid black;
     background-color: #f0f0f6;
@@ -137,6 +137,10 @@ kdb {
     color: #203030;
 }
 
+
+#features {
+    margin-right: 25px;
+}
 
 #features li {
     font-size: 0.9em;
