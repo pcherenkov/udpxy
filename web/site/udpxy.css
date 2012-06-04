@@ -1,6 +1,5 @@
 body {
-    margin: 0px 110px 0px 110px;
-    /*background-color: #3a4974;*/
+    margin: 0px 90px 0px 90px;
     background-color: #9090a2;
     color: #000000;
     font-family: verdana,sans;
@@ -10,13 +9,12 @@ body {
     margin: 0px;
     border-left: 1px solid black;
     border-right: 1px solid black;
-    /*background-color: #c0c3c6;*/
     background-color: #f0f0f6;
 }
 
 #content {
     position: relative;
-    margin: 0px 150px 20px 30px;
+    margin: 30px 150px 10px 30px;
     padding-right: 10px;
 }
 
@@ -38,7 +36,7 @@ p {
 #navmenu {
     position: absolute;
     top: 20px;
-    left: 940px;
+    left: 970px;
     width: 90px;
     padding-right: 10px;
     background-image: url("images/msep2.png");
@@ -82,6 +80,21 @@ kdb {
     font-size: 80%;
     white-space: pre;
     overflow: auto;
+}
+
+
+#main-txt h3 {
+    color: #203070;
+    font-weight: 1.5em;
+    font-family: sans-serif;
+}
+
+
+#main-txt p {
+    text-align: justify;
+    font-size: 0.9em;
+    font-family: verdana, arial, sans-serif;
+    color: #202040;
 }
 
 #support-txt p {
