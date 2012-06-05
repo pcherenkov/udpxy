@@ -1,6 +1,6 @@
 /* @(#) common definitions for udpxy
  *
- * Copyright 2008-2011 Pavel V. Cherenkov (pcherenkov@gmail.com)
+ * Copyright 2008-2012 Pavel V. Cherenkov (pcherenkov@gmail.com)
  *
  *  This file is part of udpxy.
  *

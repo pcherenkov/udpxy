@@ -114,7 +114,7 @@ MKDEP_SRC := $(UTILDIR)/mkdep.c
 MKDEP_TOOL := $(UTILDIR)/mkdep
 
 SRC := udpxy.c sloop.c rparse.c util.c prbuf.c ifaddr.c ctx.c mkpg.c \
-	  rtp.c uopt.c dpkt.c netop.c extrn.c main.c
+	rtp.c uopt.c dpkt.c netop.c extrn.c main.c
 ifneq (yes,$(NO_UDPXREC))
 SRC := $(SRC) udpxrec.c
 endif
@@ -131,19 +131,19 @@ CORES := core.* core
 
 release:
 	@echo -e "\nMaking a [release] version (use 'debug' target as an alternative)\n"
-	@$(MAKE) all "COPT=${PROD_OPT}"
+	@$(MAKE) all "COPT=${PROD_OPT}" "CFLAGS=${CFLAGS}"
 
 debug:
 	@echo -e "\nMaking a [debug] version (use 'release' target as an alternative)\n"
-	@$(MAKE) all "COPT=${DEBUG_OPT}"
+	@$(MAKE) all "COPT=${DEBUG_OPT}" "CFLAGS=${CFLAGS}"
 
 lean:
 	@echo -e "\nMaking a [lean] version (minimal size)\n"
-	@$(MAKE) all "COPT=${LEAN_OPT}"
+	@$(MAKE) all "COPT=${LEAN_OPT}" "CFLAGS=${CFLAGS}"
 
 ndebug:
 	@echo -e "\nMaking a [lean] version with debug info\n"
-	@$(MAKE) all "COPT=${LEAN_OPT} ${DEBUG_ON}"
+	@$(MAKE) all "COPT=${LEAN_OPT} ${DEBUG_ON}" "CFLAGS=${CFLAGS}"
 
 verify:
 	@echo -e "\nVerifying all build targets\n"

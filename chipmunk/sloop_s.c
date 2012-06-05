@@ -122,11 +122,6 @@ srv_loop( const char* ipaddr, int port,
         tmout.tv_sec = g_uopt.ssel_tmout;
         tmout.tv_usec = 0;
 
-        if (tmout.tv_sec) {
-            TRACE( (void)tmfprintf (g_flog, "select() timeout set to "
-            "[%ld] seconds\n", tmout.tv_sec) );
-        }
-
         idle_tmout.tv_sec = IDLE_TMOUT_SEC;
         idle_tmout.tv_usec = 0;
 
@@ -135,6 +130,11 @@ srv_loop( const char* ipaddr, int port,
 
         TRACE( (void)tmfprintf( g_flog, "Waiting for input from [%ld] fd's, "
             "%s timeout\n", (long)(2 + nasock), (ptmout ? "with" : "NO")));
+
+        if (ptmout && ptmout->tv_sec) {
+            TRACE( (void)tmfprintf (g_flog, "select() timeout set to "
+            "[%ld] seconds\n", ptmout->tv_sec) );
+        }
 
         (void) sigprocmask (SIG_UNBLOCK, &bset, NULL);
         if( must_quit() ) {
