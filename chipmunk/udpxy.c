@@ -315,11 +315,11 @@ send_http_response( int sockfd, int code, const char* reason, ... )
     msg[0] = '\0';
 
     if ((200 == code) && g_uopt.h200_ftr[0]) {
-        msglen = snprintf( msg, sizeof(msg) - 1, "HTTP/1.1 %d %s\n%s\n%s\n\n",
+        msglen = snprintf( msg, sizeof(msg) - 1, "HTTP/1.1 %d %s\r\n%s\r\n%s\r\n\r\n",
             code, reason, CONTENT_TYPE, g_uopt.h200_ftr);
     }
     else {
-        msglen = snprintf( msg, sizeof(msg) - 1, "HTTP/1.1 %d %s\n%s\n\n",
+        msglen = snprintf( msg, sizeof(msg) - 1, "HTTP/1.1 %d %s\r\n%s\r\n\r\n",
                 code, reason, CONTENT_TYPE );
     }
     if( msglen <= 0 ) return ERR_INTERNAL;
