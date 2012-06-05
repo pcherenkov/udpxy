@@ -185,6 +185,11 @@ Patch 1 (13-Dec-2011)
 Patch 2 (20-Dec-2011)
     (*) FIXED: misc build errors and inconsistencies
 
+Patch 3 (5-Jun-2012)
+    (*) sloop.c uses syscall.h & -DUSE_SELECT to alternate between select(2)- and pselect(2)-based implementations
+        of server loop;
+    (*) FIXED: idle timeout is displayed correctly in select(2)-based version;
+
 
 # __EOF__
 
