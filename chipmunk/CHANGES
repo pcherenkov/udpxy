@@ -186,8 +186,11 @@ Patch 2 (20-Dec-2011)
     (*) FIXED: misc build errors and inconsistencies
 
 Patch 4 (9-Feb-2012)
-    (*) FIXED: SIGSEGV caused by dpkt.c:upxfmt_NAME[] having less members than indexes used (RAW was missing)
-    (*) rdebug (release with debug symbols), ldebug (lean with debug symbols) targets added
+    (*) FIXED: SIGSEGV caused by dpkt.c:upxfmt_NAME[] having less members than indexes used (RAW was missing);
+    (*) rdebug (release with debug symbols), ldebug (lean with debug symbols) targets added;
+
+Patch 5 (5-Jun-2012)
+    (*) HTTP response lines are now separated by CRLF (not just LF), as per RFC2616;
 
 # __EOF__
 
