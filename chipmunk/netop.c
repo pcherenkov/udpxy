@@ -227,7 +227,7 @@ setup_mcast_listener( struct sockaddr_in*   sa,
         /*  On some systems (such as FreeBSD) SO_REUSEADDR
             just isn't enough to subscribe to N same channels for different clients.
         */
-        rc = setsockopt( lsock, SOL_SOCKET, SO_REUSEPORT,
+        rc = setsockopt( sockfd, SOL_SOCKET, SO_REUSEPORT,
                          &ON, sizeof(ON) );
         if( 0 != rc ) {
             mperror(g_flog, errno, "%s: setsockopt SO_REUSEPORT",
