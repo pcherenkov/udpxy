@@ -41,6 +41,34 @@
 extern FILE* g_flog;    /* application log */
 
 
+int
+set_lowmark(int sockfd, int wmark, const char *where)
+{
+    int rc = 0;
+
+#ifndef HAS_SO_RCVLOWAT
+    const char *status = "IGNORED (SO_RCVLOWAT not supported)";
+    (void) sockfd; (void) wmark;
+#else
+    const char *status = "OK";
+    rc = setsockopt (sockfd, SOL_SOCKET, SO_RCVLOWAT,
+            (char*)&wmark, sizeof(wmark));
+    if (rc) {
+        mperror (g_flog, errno, "%s: setsockopt SO_RCVLOWAT",
+            __func__);
+        status = "FAILED";
+    }
+#endif
+
+    (void) where; (void) status; /* used only when TRACE is enabled */
+
+    TRACE( (void)tmfprintf(g_flog,
+        "Setting low watermark for %s socket [%d] to %d: %s\n",
+        (where ? where : ""), sockfd, wmark, status) );
+    return rc;
+}
+
+
 /* set up (server) listening sockfd
  */
 int
@@ -92,15 +120,8 @@ setup_listener( const char* ipaddr, int port, int* sockfd, int bklog )
         rc = set_nblock (lsock, NONBLOCK);
         if (0 != rc) break;
 
-        TRACE( (void)tmfprintf (g_flog, "Setting low watermark for "
-            "server socket [%d] to [%d]\n", lsock, wmark) );
-        rc = setsockopt (lsock, SOL_SOCKET, SO_RCVLOWAT,
-                (char*)&wmark, sizeof(wmark));
-        if (rc) {
-            mperror (g_flog, errno, "%s: setsockopt SO_RCVLOWAT",
-                __func__);
-            break;
-        }
+        rc = set_lowmark(lsock, wmark, "server");
+        if (0 != rc) break;
 
         rc = bind( lsock, (struct sockaddr*)&servaddr, sizeof(servaddr) );
         if( 0 != rc ) break;

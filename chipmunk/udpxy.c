@@ -952,15 +952,9 @@ accept_requests (int sockfd, tmfd_t* asock, size_t* alen)
         }
         */
         if (wmark > 0) {
-            if (0 != setsockopt (new_sockfd, SOL_SOCKET, SO_RCVLOWAT,
-                    (char*)&wmark, sizeof(wmark))) {
-                mperror (g_flog, errno, "%s: setsockopt SO_RCVLOWAT [%d]",
-                    __func__, wmark);
+            if (0 != set_lowmark(new_sockfd, wmark, "newly-accepted socket")) {
                 (void) close (new_sockfd); /* TODO: error-aware close */
                 continue;
-            } else {
-                TRACE( (void)tmfprintf (g_flog, "Receive LOW WATERMARK [%d] appleid "
-                    "to newly-accepted socket [%d]\n", wmark, new_sockfd) );
             }
         }
 

@@ -30,6 +30,12 @@ struct sockaddr_in;
 extern "C" {
 #endif
 
+/* set low watermark for the socket (if the option is available)
+ */
+int
+set_lowmark(int sockfd, int wmark, const char *where);
+
+
 /* set up (server) listening sockfd
  */
 int
