@@ -196,7 +196,6 @@ Patch 5 (5-Jun-2012)
     (*) optimization patches by Alexey Suhinin integrated (tcp_nodelay, pause_timeout, mstream_type);
     (*) sloop.c uses syscall.h & -DUSE_SELECT to alternate between select(2)- and pselect(2)-based implementations of server loop
     (*) FIXED: idle timeout displayed incorrectly in select(2)-based version;
-    (*) added rdebug (release + symbols), ldebug (lean + symbols) make targets.
 
 
 # __EOF__
