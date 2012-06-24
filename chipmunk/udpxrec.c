@@ -748,7 +748,9 @@ int udpxrec_main( int argc, char* const argv[] )
             }
         }
 
+#ifndef NO_ROOT_UID
         if( 0 == geteuid() ) {
+#endif
             if( !no_daemon ) {
                 if( stderr == g_flog ) {
                     (void) fprintf( stderr,
@@ -767,8 +769,9 @@ int udpxrec_main( int argc, char* const argv[] )
                     rc = ERR_INTERNAL; break;
                 }
             }
-
+#ifndef NO_ROOT_UID
         } /* 0 == geteuid() */
+#endif
 
         if( NULL != g_recopt.pidfile ) {
             rc = make_pidfile( g_recopt.pidfile, getpid(), g_flog );

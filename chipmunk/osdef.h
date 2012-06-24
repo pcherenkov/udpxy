@@ -42,6 +42,7 @@
     #define NO_INET6_SUPPORT
     #define NO_SOCKADDR_SA_LEN
     #define NO_MCAST_BIND
+    #define NO_ROOT_UID
 
     #undef  HAS_VARRUN
     #undef  HAS_VARTMP

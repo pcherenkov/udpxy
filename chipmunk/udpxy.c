@@ -1543,7 +1543,9 @@ udpxy_main( int argc, char* const argv[] )
             }
         }
 
+#ifndef NO_ROOT_UID
         if( 0 == geteuid() ) {
+#endif
             if( !no_daemon ) {
                 if( stderr == g_flog ) {
                     (void) fprintf( stderr,
@@ -1565,7 +1567,9 @@ udpxy_main( int argc, char* const argv[] )
 
             if( 0 != (rc = make_pidfile( pidfile, getpid(), g_flog )) )
                 break;
-        }
+#ifndef NO_ROOT_UID
+        } /* 0 == geteuid() */
+#endif
 
         qact.sa_handler = handle_quitsigs;
         sigemptyset(&qact.sa_mask);
