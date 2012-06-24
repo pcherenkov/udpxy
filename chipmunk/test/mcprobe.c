@@ -40,6 +40,11 @@
     #define TRACE( expr ) ((void)0)
 #endif
 
+#ifdef __CYGWIN__
+    #define NO_MCAST_BIND
+#endif
+
+
 #define IPv4_STRLEN     20
 #define PORT_STRLEN     6
 
@@ -143,6 +148,11 @@ setup_mcast_socket( const char* mifcstr,
             perror( "setsockopt SO_REUSEADDR" );
             break;
         }
+
+#ifdef NO_MCAST_BIND
+        /* OVERRIDE the address where cannot bind to D-class IP's */
+        sa.sin_addr.s_addr = htonl(INADDR_ANY);
+#endif
 
         if( 0 != bind( sockfd, (struct sockaddr*)&sa, sizeof(sa)) ) {
             perror( "bind" );

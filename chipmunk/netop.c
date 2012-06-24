@@ -157,10 +157,6 @@ set_multicast( int msockfd, const struct in_addr* mifaddr,
         mperror( g_flog, errno, "%s: getsockname", __func__ );
         return -1;
     }
-#ifdef NO_MCAST_BIND
-    /* OVERRIDE the socket's address */
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-#endif
     (void) memcpy( &mreq.imr_multiaddr, &addr.sin_addr,
                 sizeof(struct in_addr) );
 
@@ -226,6 +222,10 @@ setup_mcast_listener( struct sockaddr_in*   sa,
             break;
         }
 
+#ifdef NO_MCAST_BIND
+        /* OVERRIDE the address where cannot bind to D-class IP's */
+        sa.sin_addr.s_addr = htonl(INADDR_ANY);
+#endif
         rc = bind( sockfd, (struct sockaddr*)sa, sizeof(*sa) );
         if( 0 != rc ) {
             mperror(g_flog, errno, "%s: bind", __func__);
