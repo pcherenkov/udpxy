@@ -213,7 +213,6 @@ setup_mcast_listener( struct sockaddr_in*   sa,
                                             "for mcast socket [%d]\n", sockfd ) );
         }
 
-
         rc = setsockopt( sockfd, SOL_SOCKET, SO_REUSEADDR,
                          &ON, sizeof(ON) );
         if( 0 != rc ) {
@@ -224,7 +223,7 @@ setup_mcast_listener( struct sockaddr_in*   sa,
 
 #ifdef NO_MCAST_BIND
         /* OVERRIDE the address where cannot bind to D-class IP's */
-        sa.sin_addr.s_addr = htonl(INADDR_ANY);
+        sa->sin_addr.s_addr = htonl(INADDR_ANY);
 #endif
         rc = bind( sockfd, (struct sockaddr*)sa, sizeof(*sa) );
         if( 0 != rc ) {
