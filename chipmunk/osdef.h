@@ -43,6 +43,7 @@
     #define NO_SOCKADDR_SA_LEN
     #define NO_MCAST_BIND
     #define NO_ROOT_UID
+    #define HIDE_OPTIND
 
     #undef  HAS_VARRUN
     #undef  HAS_VARTMP

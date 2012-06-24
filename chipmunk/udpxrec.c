@@ -536,7 +536,9 @@ int udpxrec_main( int argc, char* const argv[] )
     time_t now = time(NULL);
     char now_buf[ 32 ] = {0}, sel_buf[ 32 ] = {0}, app_finfo[80] = {0};
 
+#ifndef HIDE_OPTIND
     extern int optind, optopt;
+#endif
     extern const char IPv4_ALL[];
 
     if( argc < 2 ) {

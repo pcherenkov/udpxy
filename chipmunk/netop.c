@@ -157,7 +157,10 @@ set_multicast( int msockfd, const struct in_addr* mifaddr,
         mperror( g_flog, errno, "%s: getsockname", __func__ );
         return -1;
     }
-
+#ifdef NO_MCAST_BIND
+    /* OVERRIDE the socket's address */
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+#endif
     (void) memcpy( &mreq.imr_multiaddr, &addr.sin_addr,
                 sizeof(struct in_addr) );
 
