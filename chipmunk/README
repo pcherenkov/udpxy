@@ -1,5 +1,5 @@
 #
-# Copyright 2008-2011 Pavel V. Cherenkov (pcherenkov@gmail.com)
+# Copyright 2008-2012 Pavel V. Cherenkov (pcherenkov@gmail.com)
 #
 #  This file is part of udpxy.
 #
@@ -122,11 +122,16 @@ The resulting PS file can be played back by most media players.
 Portability
 --------------
 udpxy was written to run on 'POSIX-compliant' systems;
-so far all builds have been tested to build and run on Linux 2.4, 2.6 (IA32, ARM)
+so far all builds have been tested to build and run on Linux 2.4, 2.6, 3.x (IA32, ARM)
 and *some* (but not all) on HP-UX 11.11 (PA-RISC 1.1, 2.0w).
 
 Build 12 of version 1.0 (Chipmunk) was ported to compile under FreeBSD 7.1
-using GNU make 3.8
+using GNU make 3.8; later builds have been tested to compile under later
+versions of FreeBSD (up to 9.0);
+
+Certain builds have been ported to build under cygwin; cygwin is
+*NOT* considered to be a primary target platform yet we are trying to
+keep the source code compatible with it.
 
 --EOF--
 
