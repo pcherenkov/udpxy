@@ -85,6 +85,8 @@ init_uopt( struct udpxy_opt* uo )
     if (-1 == read_http_footer (uo->h200_ftr, sizeof(uo->h200_ftr))) {
         rc = -1; /* modify rc only if there is an error */
     }
+
+    uo->tcp_nodelay = (flag_t)get_flagval( "UDPXY_TCP_NODELAY", 1);
     return rc;
 }
 

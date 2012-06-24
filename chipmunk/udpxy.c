@@ -29,9 +29,8 @@
 #include <sys/select.h>
 
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/time.h>
-
-/* #include <sys/select.h> */
 
 #include <unistd.h>
 #include <stdio.h>
@@ -366,12 +365,12 @@ check_mcast_refresh( int msockfd, time_t* last_tm,
  * PAUSE state
  */
 static int
-pause_detect( int ntrans, time_t* p_pause  )
+pause_detect( int ntrans, ssize_t max_pause_msec, time_t* p_pause  )
 {
     time_t now = 0;
-    const double MAX_PAUSE_SEC = 5.0;
+    const double MAX_PAUSE_SEC = (double)max_pause_msec / 1000.0;
 
-    assert( p_pause );
+    assert( p_pause && MAX_PAUSE_SEC > 0.0 );
 
     /* timeshift: detect PAUSE by would-block error */
     if (IO_BLK == ntrans) {
@@ -504,6 +503,8 @@ relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
     sigset_t ubset;
 
     const int ALLOW_PAUSES = get_flagval( "UDPXY_ALLOW_PAUSES", 0 );
+    const ssize_t MAX_PAUSE_MSEC =
+        get_sizeval( "UDPXY_PAUSE_MSEC", 1000);
 
     /* permissible variation in data-packet size */
     static const ssize_t t_delta = 0x20;
@@ -513,7 +514,7 @@ relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
     static const int SET_PID = 1;
     struct tps_data tps;
 
-    assert( ctx && mifaddr );
+    assert( ctx && mifaddr && MAX_PAUSE_MSEC > 0 );
 
     (void) sigemptyset (&ubset);
     sigaddset (&ubset, SIGINT);
@@ -608,7 +609,8 @@ relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
 
             if ( nsent < 0 ) {
                 if ( !ALLOW_PAUSES ) break;
-                if ( 0 != pause_detect( nsent, &pause_time ) ) break;
+                if ( 0 != pause_detect( nsent, MAX_PAUSE_MSEC, &pause_time ) )
+                    break;
             }
 
             TRACE( check_fragments("sent", nrcv,
@@ -919,6 +921,7 @@ accept_requests (int sockfd, tmfd_t* asock, size_t* alen)
     struct sockaddr_in  cliaddr;
     a_socklen_t         addrlen = sizeof (cliaddr);
     char                peer_addr [128] = "#undef#";
+    static const int    YES = 1;
 
     while (naccepted < nmax) {
         TRACE( (void)tmfputs ("Accepting new connection\n", g_flog) );
@@ -961,6 +964,14 @@ accept_requests (int sockfd, tmfd_t* asock, size_t* alen)
             } else {
                 TRACE( (void)tmfprintf (g_flog, "Receive LOW WATERMARK [%d] appleid "
                     "to newly-accepted socket [%d]\n", wmark, new_sockfd) );
+            }
+        }
+
+        if (g_uopt.tcp_nodelay) {
+            if (0 != setsockopt(new_sockfd, IPPROTO_TCP,
+                TCP_NODELAY, &YES, sizeof(YES))) {
+                    mperror(g_flog, errno, "%s setsockopt TCP_NODELAY",
+                        __func__);
             }
         }
 

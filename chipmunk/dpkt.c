@@ -626,23 +626,21 @@ read_packet( struct dstream_ctx* spc, int fd, char* buf, size_t len )
         assert( !buf_overrun(buf, len, 0, chunk_len, g_flog) );
         n = read_buf( fd, buf, chunk_len, g_flog );
         if( n <= 0 ) return n;
-
-        spc->stype = get_mstream_type( buf, n, g_flog );
     }
 
     if( spc->flags & F_CHECK_FMT ) {
-        if( UPXDT_RTP_TS == spc->stype ) {
-            /* scattered data (to exclude RTP headers):
-                * use packet registry */
-            spc->flags |= F_SCATTERED;
-        }
-        else if( UPXDT_TS == spc->stype ) {
-            spc->flags &= ~F_SCATTERED;
-        }
-        else {
-            spc->stype = UPXDT_RAW;
-            TRACE( (void)tmfputs( "Unrecognized stream type\n", g_flog ) );
-        }
+        spc->stype = get_mstream_type( buf, n, g_flog );
+        switch (spc->stype) {
+            case UPXDT_RTP_TS:
+                /* scattered: exclude RTP headers */
+                spc->flags |= F_SCATTERED; break;
+            case UPXDT_TS:
+                spc->flags &= ~F_SCATTERED; break;
+            default:
+                spc->stype = UPXDT_RAW;
+                TRACE( (void)tmfputs( "Unrecognized stream type\n", g_flog ) );
+                break;
+        } /* switch */
 
         TRACE( (void)tmfprintf( g_flog, "Established stream as [%s]\n",
                fmt2str( spc->stype ) ) );
