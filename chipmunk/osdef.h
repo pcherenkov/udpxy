@@ -41,6 +41,10 @@
 #if defined(__CYGWIN__)
     #define NO_INET6_SUPPORT
     #define NO_SOCKADDR_SA_LEN
+    #define NO_MCAST_BIND
+
+    #undef  HAS_VARRUN
+    #undef  HAS_VARTMP
 #endif
 
 #if defined(__linux)
@@ -56,13 +60,15 @@
 #ifndef HAS_SETLINEBUF
     #define Setlinebuf(a)  setvbuf(a, NULL, _IOLBF, BUFSIZ)
 #else
-    #define  Setlinebuf(a) setlinebuf(a)
+    #define Setlinebuf(a) setlinebuf(a)
 #endif
 
 #if defined(HAS_VARRUN)
     #define PIDFILE_DIR     "/var/run"
 #elif defined(HAS_VARTMP)
     #define PIDFILE_DIR     "/var/tmp"
+#else
+    #define PIDFILE_DIR     "."
 #endif
 
 #endif /* UDPXY_OSDEFH_0101082158 */
