@@ -191,6 +191,7 @@ Patch 4 (9-Feb-2012)
 
 Patch 5 (5-Jun-2012)
     (*) HTTP response lines are now separated by CRLF (not just LF), as per RFC2616;
+    (*) Low watermark applied only if SO_RCVLOWAT is supported (by platform);
 
 Patch 6 (24-Jun-2012)
     (*) applied changes suggested by Alexey Suhinin to build under Cygwin;

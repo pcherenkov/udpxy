@@ -1,6 +1,6 @@
 /* @(#) define OS-specific types/constants
  *
- * Copyright 2008-2011 Pavel V. Cherenkov (pcherenkov@gmail.com) (pcherenkov@gmail.com)
+ * Copyright 2008-2012 Pavel V. Cherenkov (pcherenkov@gmail.com)
  *
  *  This file is part of udpxy.
  *
@@ -71,6 +71,10 @@
     #define PIDFILE_DIR     "/var/tmp"
 #else
     #define PIDFILE_DIR     "."
+#endif
+
+#ifdef SO_RCVLOWAT
+    #define HAS_SO_RCVLOWAT
 #endif
 
 #endif /* UDPXY_OSDEFH_0101082158 */
