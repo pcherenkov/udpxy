@@ -191,6 +191,8 @@ Patch 4 (9-Feb-2012)
 
 Patch 5 (5-Jun-2012)
     (*) HTTP response lines are now separated by CRLF (not just LF), as per RFC2616;
+    (*) SO_REUSEPORT used (where available) to allow subscribing more that one client
+        to the same channel on certain systems (such as FreeBSD);
 
 # __EOF__
 
