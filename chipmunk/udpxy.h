@@ -1,6 +1,6 @@
 /* @(#) common definitions for udpxy
  *
- * Copyright 2008-2011 Pavel V. Cherenkov (pcherenkov@gmail.com)
+ * Copyright 2008-2012 Pavel V. Cherenkov (pcherenkov@gmail.com)
  *
  *  This file is part of udpxy.
  *
@@ -67,6 +67,11 @@ typedef u_short flag_t;
 
 /* max size of string with IPv4 address */
 #define IPADDR_STR_SIZE 16
+
+typedef struct tmfd {
+    int     fd;
+    time_t  atime;
+} tmfd_t;
 
 #endif /* UDPXY_H_0110081654 */
 

@@ -185,6 +185,7 @@ Patch 1 (13-Dec-2011)
 Patch 2 (20-Dec-2011)
     (*) FIXED: misc build errors and inconsistencies
 
+<<<<<<< HEAD
 Patch 4 (9-Feb-2012)
     (*) FIXED: SIGSEGV caused by dpkt.c:upxfmt_NAME[] having less members than indexes used (RAW was missing);
     (*) rdebug (release with debug symbols), ldebug (lean with debug symbols) targets added;
@@ -194,6 +195,9 @@ Patch 5 (5-Jun-2012)
     (*) SO_REUSEPORT used (where available) to allow subscribing more that one client
         to the same channel on certain systems (such as FreeBSD);
     (*) optimization patches by Alexey Suhinin integrated (tcp_nodelay, pause_timeout, mstream_type);
+    (*) sloop.c uses syscall.h & -DUSE_SELECT to alternate between select(2)- and pselect(2)-based implementations of server loop
+    (*) FIXED: idle timeout displayed incorrectly in select(2)-based version;
+    (*) added rdebug (release + symbols), ldebug (lean + symbols) make targets.
 
 
 # __EOF__
