@@ -92,8 +92,6 @@ PATCHNO := `cat $(PATCHFILE)`
 CHANGEFILE := CHANGES
 READMEFILE := README
 
-DOCFILES := doc/udpxy-manual-RU.rtf
-
 INSTALLROOT := /usr/local
 
 ARCDIR = ..
@@ -112,6 +110,8 @@ LEAN_OPT   := $(COMMON_OPT) -DNDEBUG $(USER_OPT)
 UTILDIR := util
 MKDEP_SRC := $(UTILDIR)/mkdep.c
 MKDEP_TOOL := $(UTILDIR)/mkdep
+
+SLOOP_FILES := sloop_p.c sloop_s.c
 
 SRC := udpxy.c sloop.c rparse.c util.c prbuf.c ifaddr.c ctx.c mkpg.c \
 	rtp.c uopt.c dpkt.c netop.c extrn.c main.c
@@ -197,8 +197,8 @@ incbuild:
 	@$(MAKE) touch
 
 DISTRO_DIR := udpxy-$(VERSION).$(BUILDNO)-$(PATCHNO)
-DISTRO_FILES := $(SRC) *.h Makefile *.txt $(BUILDFILE) $(BTYPEFILE) \
-	$(VERSIONFILE) $(CHANGEFILE) $(READMEFILE) $(DOCFILES) $(PATCHFILE)
+DISTRO_FILES := $(SRC) $(SLOOP_FILES) *.h Makefile *.txt $(BUILDFILE) $(BTYPEFILE) \
+	$(VERSIONFILE) $(CHANGEFILE) $(READMEFILE) $(PATCHFILE)
 
 distro:
 	@rm -fr $(DISTRO_DIR)
