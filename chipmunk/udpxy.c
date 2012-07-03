@@ -917,7 +917,7 @@ void
 accept_requests (int sockfd, tmfd_t* asock, size_t* alen)
 {
     int                 new_sockfd = -1, err = 0, peer_port = -1,
-                        wmark = g_uopt.ss_rlwmark;
+                        wmark = g_uopt.rcv_lwmark;
     size_t              nmax = *alen, naccepted = 0;
     struct sockaddr_in  cliaddr;
     a_socklen_t         addrlen = sizeof (cliaddr);
@@ -963,7 +963,7 @@ accept_requests (int sockfd, tmfd_t* asock, size_t* alen)
                 (void) close (new_sockfd); /* TODO: error-aware close */
                 continue;
             } else {
-                TRACE( (void)tmfprintf (g_flog, "Receive LOW WATERMARK [%d] appleid "
+                TRACE( (void)tmfprintf (g_flog, "Receive LOW WATERMARK [%d] applied "
                     "to newly-accepted socket [%d]\n", wmark, new_sockfd) );
             }
         }

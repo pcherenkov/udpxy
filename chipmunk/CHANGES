@@ -1,6 +1,6 @@
 # @(#) list changes to udpxy from build to build
 #
-# Copyright 2008-2011 Pavel V. Cherenkov (pcherenkov@gmail.com)
+# Copyright 2008-2012 Pavel V. Cherenkov (pcherenkov@gmail.com)
 #
 #  This file is part of udpxy.
 #
@@ -189,13 +189,16 @@ Patch 4 (9-Feb-2012)
     (*) FIXED: SIGSEGV caused by dpkt.c:upxfmt_NAME[] having less members than indexes used (RAW was missing);
     (*) rdebug (release with debug symbols), ldebug (lean with debug symbols) targets added;
 
-Patch 5 (5-Jun-2012)
+Build 22 was skipped to avoid confusion with patches and betas pulled off github;
+
+Build 23 (3-Jul-2012)
     (*) HTTP response lines are now separated by CRLF (not just LF), as per RFC2616;
-    (*) SO_REUSEPORT used (where available) to allow subscribing more that one client
-        to the same channel on certain systems (such as FreeBSD);
+    (*) SO_REUSEPORT used (where available) to allow more that one client
+        to subscribe to the same channel on BSD-derived systems;
     (*) optimization patches by Alexey Suhinin integrated (tcp_nodelay, pause_timeout, mstream_type);
     (*) sloop.c uses syscall.h & -DUSE_SELECT to alternate between select(2)- and pselect(2)-based implementations of server loop
     (*) FIXED: idle timeout displayed incorrectly in select(2)-based version;
+    (*) HTTP response includes 'Server:' clause;
 
 
 # __EOF__

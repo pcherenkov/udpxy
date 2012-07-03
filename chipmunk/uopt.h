@@ -59,7 +59,7 @@ struct udpxy_opt {
             sw_tmout;       /* server WRITE/SND timeout (sec)           */
     long    ssel_tmout;     /* server select/poll timeout (sec)         */
     int     lq_backlog;     /* accept queue length for listening socket */
-    int     ss_rlwmark;     /* receive low watermark on listening socket */
+    int     rcv_lwmark;     /* receive low watermark on listening socket */
 
     flag_t  nosync_sbuf,    /* do not alter source-socket's buffer size */
             nosync_dbuf;    /* do not alter dest-socket's buffer size   */
