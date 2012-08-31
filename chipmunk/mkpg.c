@@ -90,6 +90,7 @@ mk_client_entries( const struct server_ctx* ctx,
                     ctx->cl[i].pid,
                     client->src_addr, client->src_port,
                     client->mcast_addr, client->mcast_port,
+                    client->tail ? client->tail : "",
                     tpstat_str( &(client->tstat), tpinfo,
                                 sizeof(tpinfo) ) );
             if( n <= 0 ) break;
