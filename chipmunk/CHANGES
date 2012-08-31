@@ -203,7 +203,7 @@ Build 23 (3-Jul-2012)
 Patch 1 (31-Aug-2012)
     (*) Added the capability to capture the HTTP variables submitted via URI beyond command/options 
         Example: http://hostname:port/udp/mcaddr:mcport?aa=1&bb=2&cc=3 - '?aa=1&bb=2&cc=3' part is now
-                 stored the client and displayed in status page as part of Destination column;
+                 preserved (for each client) and displayed in status page as part of Destination column;
 
 # __EOF__
 
