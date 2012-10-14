@@ -204,6 +204,17 @@ get_pidstr( int reset, const char* pfx );
 const char*
 get_sysinfo (int* perr);
 
+/* return 1 if err is one of the errors signifying possibility of a block, 0 otherwise.
+ */
+int
+would_block(int err);
+
+/* return 1 if this kind of error should not be captures in syslog, 0 otherwise.
+ */
+int
+no_fault(int err);
+
+
 #ifdef __cplusplus
 }
 #endif

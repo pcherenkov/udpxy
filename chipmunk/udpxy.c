@@ -225,7 +225,11 @@ read_command( int sockfd, struct server_ctx *srv)
     hlen = recv( sockfd, httpbuf, sizeof(httpbuf), 0 );
     if( 0>hlen ) {
         rc = errno;
-        mperror(g_flog, rc, "%s - recv (%d)", __func__, rc);
+        if( !no_fault(rc) )
+            mperror(g_flog, rc, "%s - recv (%d)", __func__, rc);
+        else {
+            TRACE( mperror(g_flog, rc, "%s - recv (%d)", __func__, rc) );
+        }
         return rc;
     }
     if (0 == hlen) {
@@ -311,6 +315,7 @@ send_http_response( int sockfd, int code, const char* reason)
     ssize_t nsent;
     a_socklen_t msglen;
     static const char CONTENT_TYPE[] = "Content-Type:application/octet-stream";
+    int err = 0;
 
     assert( (sockfd > 0) && code && reason );
 
@@ -328,7 +333,12 @@ send_http_response( int sockfd, int code, const char* reason)
 
     nsent = send( sockfd, msg, msglen, 0 );
     if( -1 == nsent ) {
-        mperror(g_flog, errno, "%s - send", __func__);
+        err = errno;
+        if( !no_fault(err) )
+            mperror(g_flog, err, "%s - send", __func__);
+        else {
+            TRACE( mperror(g_flog, err, "%s - send", __func__) );
+        }
         return ERR_INTERNAL;
     }
 
