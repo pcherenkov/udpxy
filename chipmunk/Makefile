@@ -181,7 +181,7 @@ $(DEPFILE): $(MKDEP_TOOL) $(SRC)
 
 $(EXEC) : $(DEPFILE) $(OBJ)
 	@rm -f $(EXEC)
-	$(CC) $(CFLAGS) $(COPT) -o $(EXEC) $(OBJ)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(COPT) -o $(EXEC) $(OBJ)
 	@ls -l $(EXEC)
 ifneq (yes, $(NO_UDPXREC))
 	@rm -f $(UDPXREC)
