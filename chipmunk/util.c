@@ -38,10 +38,13 @@
 #include <limits.h>
 
 #include "util.h"
+#include "uopt.h"
 #include "mtrace.h"
 #include "osdef.h"
 
 static char s_sysinfo [80] = "\0";
+
+extern struct udpxy_opt g_uopt;
 
 /* write buffer to a file
  *
@@ -374,12 +377,9 @@ write_buf( int fd, const char* data, const ssize_t len, FILE* log )
     if( nwr <= 0 ) {
         if( log ) {
             if (IO_BLK == error)
-                mperror( log, errno, "%s: socket time-out on write", __func__);
-            else if( !no_fault(err) )
+                (void)tmfprintf( log, "%s: socket time-out on write", __func__);
+            else if( !no_fault(err) || g_uopt.is_verbose )
                 mperror( log, errno, "%s: write", __func__ );
-            else {
-                TRACE( mperror( log, errno, "%s: write", __func__ ) );
-            }
         }
 
         return error;
@@ -431,12 +431,9 @@ read_buf( int fd, char* data, const ssize_t len, FILE* log )
     if( nrd < 0 ) {
         if( log ) {
             if( would_block(err) )
-                mperror( log, errno, "%s: socket time-out on read", __func__);
-            else if( !no_fault(err) )
+                (void)tmfprintf( log, "%s: socket time-out on read", __func__);
+            else if( !no_fault(err) || g_uopt.is_verbose )
                 mperror( log, errno, "%s: read", __func__ );
-            else {
-                TRACE( mperror( log, errno, "%s: read", __func__ ) );
-            }
         }
     }
 
