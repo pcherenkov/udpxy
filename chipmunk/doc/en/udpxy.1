@@ -1,0 +1,120 @@
+.\"
+.\" udpxy.1
+.\"
+.\" Original: (pcherenkov@gmail.com)
+.\"
+.\"
+.TH udpxy 1 "November 17, 2012" "Version 1.0" "udpxy manual page"
+
+.SH NAME
+udpxy - UDP-to-HTTP multicast traffic relay daemon.
+
+.SH SYNOPSIS
+.B udpxy
+[\-vTS] [\-a \fI<listenaddr>\fP] [\-m \fI<mcast_ifc_addr>\fP] [\-c \fI<clients>\fP]
+[\-l \fI<logfile>\fP] [\-B \fI<sizeK>\fP] [\-R \fI<msgs>\fP] [\-H \fI<sec>\fP]
+[\-n \fI<nice_incr>\fP] [\-M \fI<sec>\fP] -p \fI<port>\fP
+
+.SH DESCRIPTION
+.PP
+udpxy is a \fIUDP-to-HTTP multicast traffic relay daemon\fP:
+it forwards UDP traffic from a given multicast subscription
+to the requesting HTTP client.
+
+.SH OPTIONS
+udpxy accepts the following options:
+.TP 8
+.B \-v
+Enable verbose output [default = \fIdisabled\fP].
+.TP 8
+.B \-S
+Enable client statistics [default = \fIdisabled\fP].
+.TP 8
+.B \-T
+Do NOT run as a daemon [default = \fIdaemon if root\fP].
+.TP 8
+.B \-a \fI<listenaddr>\fP
+IPv4 address/interface to listen on [default = \fI0.0.0.0\fP].
+.TP 8
+.B \-m \fI<mcast_ifc_addr>\fP
+IPv4 address/interface of (multicast) source [default = \fI0.0.0.0\fP].
+.TP 8
+.B \-c \fI<clients>\fP
+Maximum number of clients to accept [default = \fI3\fP, max = \fI5000\fP].
+.TP 8
+.B \-l \fI<logfile>\fP
+Log output to file [default = \fIstderr\fP].
+.TP 8
+.B \-B \fI<sizeK>\fP
+Buffer size (65536, 32Kb, 1Mb) for inbound (multicast) data [default = \fI2048 bytes\fP].
+.TP 8
+.B \-R \fI<msgs>\fP
+Maximum number of messages to buffer (\fI\-1\fP = \fIall\fP) [default = \fI1\fP].
+.TP 8
+.B \-H \fI<sec>\fP
+Maximum time (in seconds) to hold data in a buffer (\fI\-1\fP = \fIunlimited\fP) [default = \fI1\fP].
+.TP 8
+.B \-M \fI<sec>\fP
+Renew multicast subscription every N seconds (\fIskip\fP if \fI0\fP) [default = \fI0\fP].
+.TP 8
+.B \-p \fI<port>\fP
+Port to listen on.
+
+
+.SH ENVIRONMENT
+udpxy utilizes the following environment variables to compliment its
+command-line options; the variables are considered for the options that
+most people would not need to change too often (or simply inconvenient
+to use from the command line).
+.PP
+\fBNB\fP: If there is a command-line switch that would intersect in functionality
+with an environment variable, the switch \fIalways\fP has the higher priority.
+.PP
+.TP 8
+.B UDPXY_RCV_TMOUT
+timeout (sec) on the \fIinbound\fP data stream (\fImulticast\fP), default=\fI5\fP;
+.TP 8
+.B UDPXY_DHOLD_TMOUT
+timeout (sec) to hold buffered data before sending/flushing to client(s), default=\fI1\fP;
+.TP 8
+.B UDPXY_SREAD_TMOUT
+timeout (sec) to \fIread\fP from the listening socked (handling HTTP requests), default=\fI1\fP;
+.TP 8
+.B UDPXY_SWRITE_TMOUT
+timeout (sec) to \fIwrite\fP to the listening socked (handling HTTP requests), default=\fI1\fP;
+.TP 8
+.B UDPXY_SSEL_TMOUT
+timeout (sec) to \fIselect(2)\fP in server loop (unused if \fIpselect(2)\fP is employed), default=\fI30\fP;
+.TP 8
+.B UDPXY_LQ_BACKLOG
+size of the listener socket's \fIbacklog\fP, default=\fI16\fP;
+.TP 8
+.B UDPXY_SRV_RLWMARK
+low watermaek on the receiving (m-cast) socket, default=\fI0\fP (\fInot set\fP);
+.TP 8
+.B UDPXY_SSOCKBUF_NOSYNC
+do not sync \fIinbound\fP (UDP) socket's buffer size (with value set by \fI\-B\fP), default=\fI1\fP (\fIsync\fP);
+.TP 8
+.B UDPXY_DSOCKBUF_NOSYNC
+do not sync \fIoutbound\fP (TCP) socket's buffer size (with value set by \fI\-B\fP), default=\fI1\fP (\fIsync\fP);
+.TP 8
+.B UDPXY_TCP_NODELAY
+disable \fINagle algorithm\fP on the newly accepted socket (\fIfaster channel switching\fP), default=\fI1\fP;
+.TP 8
+.B UDPXY_HTTP200_FTR_FILE
+append contents of the given text file to the \fIHTTP 200\fP response, default=\fInone\fP;
+.TP 8
+.B UDPXY_HTTP200_FTR_LN
+append the text (line) to the \fIHTTP 200\fP response, default=\fInone\fP;
+.TP 8
+.B UDPXY_ALLOW_PAUSES
+if blocked on a \fIwrite(2)\fP, keep reading data until the buffer (\fB-B\fP \fI<sizeK>\fP) is full, default=\fIdisabled\fP;
+.TP 8
+.B UDPXY_PAUSE_MSEC
+allow only \fIN\fP milliseconds of reading data when blocked on a \fIwrite(2)\fP.
+
+.SH AUTHORS
+Pavel V. Cherenkov and all the good people who submitted patches or otherwise contributed to the project.
+
+.\" __EOF__
+
