@@ -63,7 +63,6 @@ endif
 
 INSTALLROOT := $(DESTDIR)$(PREFIX)
 
-
 ARCDIR = ..
 ARCFILE := $(ARCDIR)/$(EXEC).$(VERSION).$(BUILDNO)-$(PATCHNO)-$(BTYPE).tar.gz
 
@@ -76,25 +75,23 @@ DEBUG_OPT  := $(COMMON_OPT) $(USER_OPT) $(DEBUG_ON) -DTRACE_MODULE
 PROD_OPT   := $(COMMON_OPT) $(USER_OPT) -DNDEBUG -DTRACE_MODULE
 LEAN_OPT   := $(COMMON_OPT) -DNDEBUG $(USER_OPT)
 
-
 UTILDIR := util
-MKDEP_SRC := $(UTILDIR)/mkdep.c
-MKDEP_TOOL := $(UTILDIR)/mkdep
 
 SLOOP_FILES := sloop_p.c sloop_s.c
 
-UDPXY_MANPAGE_EN := doc/en/udpxy.1
-UDPXY_MANPAGE_RU := doc/ru/udpxy.1
+UDPXY_MAN1   := udpxy.1
+UDPXREC_MAN1 := udpxrec.1
 
-UDPXREC_MANPAGE_EN := doc/en/udpxrec.1
-UDPXYREC_MANPAGE_RU := doc/ru/udpxrec.1
+UDPXY_MANPAGE_EN := doc/en/$(UDPXY_MAN1)
+UDPXY_MANPAGE_RU := doc/ru/$(UDPXY_MAN1)
+
+UDPXREC_MANPAGE_EN := doc/en/$(UDPXREC_MAN1)
+UDPXYREC_MANPAGE_RU := doc/ru/$(UDPXREC_MAN1)
 
 MANPAGE_DIR := $(DESTDIR)/usr/share/man/man1
 
-
 DOCDIR := doc
 DOCFILES := *.txt $(DOCDIR)
-
 
 SRC := udpxy.c sloop.c rparse.c util.c prbuf.c ifaddr.c ctx.c mkpg.c \
 	rtp.c uopt.c dpkt.c netop.c extrn.c main.c
@@ -147,19 +144,11 @@ verify:
 	@$(MAKE) debug
 	@$(MAKE) clean
 
-ifneq ($(MKDEPOPT),)
 mk_deps := $(CC) $(CFLAGS) $(MKDEPOPT) $(SRC)
-else
-mk_deps := HPATH='.' $(MKDEP_TOOL) -- $(SRC)
-endif
 
 all:	$(DEPFILE) $(EXEC)
 
-$(MKDEP_TOOL): $(MKDEP_SRC)
-	$(CC) -o $@ $(MKDEP_SRC)
-	@ls -l $@
-
-$(DEPFILE): $(MKDEP_TOOL) $(SRC)
+$(DEPFILE): $(SRC)
 	$(mk_deps) > $(DEPFILE)
 
 $(EXEC) : $(DEPFILE) $(OBJ)
@@ -192,7 +181,6 @@ dist:
 	@mkdir  $(DISTRO_DIR)
 	@mkdir  $(DISTRO_DIR)/$(UTILDIR)
 	cp -R $(DISTRO_FILES) $(DISTRO_DIR)
-	cp -R $(MKDEP_SRC) $(DISTRO_DIR)/$(MKDEP_SRC)
 	tar -cvzf $(ARCFILE) $(DISTRO_DIR)
 	@ls -l $(ARCFILE)
 	@rm -fr $(DISTRO_DIR)
@@ -202,11 +190,11 @@ install:
 	@cp $(EXEC) $(INSTALLROOT)/bin
 	@ls -l $(INSTALLROOT)/bin/$(EXEC)
 	@mkdir -p -m 755 $(MANPAGE_DIR)
-	@$(GZIP) -c $(UDPXY_MANPAGE_EN) > $(MANPAGE_DIR)/$(UDPXY_MANPAGE_EN).gz
+	@$(GZIP) -c $(UDPXY_MANPAGE_EN) > $(MANPAGE_DIR)/$(UDPXY_MAN1).gz
 ifneq (yes, $(NO_UDPXREC))
 	@ln -s $(INSTALLROOT)/bin/$(EXEC) $(INSTALLROOT)/bin/$(UDPXREC)
 	@ls -l $(INSTALLROOT)/bin/$(UDPXREC)
-	@$(GZIP) -c $(UDPXREC_MANPAGE_EN) > $(MANPAGE_DIR)/$(UDPXREC_MANPAGE_EN).gz
+	@$(GZIP) -c $(UDPXREC_MANPAGE_EN) > $(MANPAGE_DIR)/$(UDPXREC_MAN1).gz
 endif
 	@echo "Installation of udpxy is complete"
 
@@ -217,7 +205,7 @@ install-strip: install
 
 uninstall:
 	@rm -f $(INSTALLROOT)/bin/$(EXEC) $(INSTALLROOT)/bin/$(UDPXREC)
-	@rm -f $(MANPAGE_DIR)/$(UDPXY_MANPAGE_EN).gz $(MANPAGE_DIR)/$(UDPXREC_MANPAGE_EN).gz
+	@rm -f $(MANPAGE_DIR)/$(UDPXY_MAN1).gz $(MANPAGE_DIR)/$(UDPXREC_MAN1).gz
 	@echo "udpxy successfully uninstalled"
 
 ifneq ($(MAKECMDGOALS), clean)
