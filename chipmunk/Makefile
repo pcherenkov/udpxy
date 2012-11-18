@@ -83,6 +83,19 @@ MKDEP_TOOL := $(UTILDIR)/mkdep
 
 SLOOP_FILES := sloop_p.c sloop_s.c
 
+UDPXY_MANPAGE_EN := doc/en/udpxy.1
+UDPXY_MANPAGE_RU := doc/ru/udpxy.1
+
+UDPXREC_MANPAGE_EN := doc/en/udpxrec.1
+UDPXYREC_MANPAGE_RU := doc/ru/udpxrec.1
+
+MANPAGE_DIR := $(DESTDIR)/usr/share/man/man1
+
+
+DOCDIR := doc
+DOCFILES := *.txt $(DOCDIR)
+
+
 SRC := udpxy.c sloop.c rparse.c util.c prbuf.c ifaddr.c ctx.c mkpg.c \
 	rtp.c uopt.c dpkt.c netop.c extrn.c main.c
 ifneq (yes,$(NO_UDPXREC))
@@ -169,7 +182,7 @@ incbuild:
 	@$(MAKE) touch
 
 DISTRO_DIR := udpxy-$(VERSION).$(BUILDNO)-$(PATCHNO)
-DISTRO_FILES := $(SRC) $(SLOOP_FILES) *.h Makefile *.txt $(BUILDFILE) $(BTYPEFILE) \
+DISTRO_FILES := $(SRC) $(SLOOP_FILES) *.h Makefile $(DOCFILES) $(BUILDFILE) $(BTYPEFILE) \
 	$(VERSIONFILE) $(CHANGEFILE) $(READMEFILE) $(PATCHFILE)
 
 distro: dist
@@ -188,6 +201,8 @@ install:
 	@mkdir -p -m 755 $(INSTALLROOT)/bin
 	@cp $(EXEC) $(INSTALLROOT)/bin
 	@ls -l $(INSTALLROOT)/bin/$(EXEC)
+	@mkdir -p -m 755 $(MANPAGE_DIR)
+	@cp $(UDPXY_MANPAGE_EN) $(MANPAGE_DIR)
 ifneq (yes, $(NO_UDPXREC))
 	@ln -s $(INSTALLROOT)/bin/$(EXEC) $(INSTALLROOT)/bin/$(UDPXREC)
 	@ls -l $(INSTALLROOT)/bin/$(UDPXREC)

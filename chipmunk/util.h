@@ -214,6 +214,10 @@ would_block(int err);
 int
 no_fault(int err);
 
+/* populate info string with application's credentials (version, patch, etc.)
+ */
+void
+mk_app_info(const char *appname, char *info, size_t infolen);
 
 #ifdef __cplusplus
 }

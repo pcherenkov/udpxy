@@ -74,11 +74,6 @@ extern const char   IPv4_ALL[];
 
 extern const char  UDPXY_COPYRIGHT_NOTICE[];
 extern const char  UDPXY_CONTACT[];
-extern const char  COMPILE_MODE[];
-extern const char  VERSION[];
-extern const int   BUILDNUM;
-extern const char  BUILD_TYPE[];
-extern const int   PATCH;
 
 extern FILE*  g_flog;
 extern volatile sig_atomic_t g_quit;
@@ -90,7 +85,7 @@ extern const char g_udpxy_app[];
 
 struct udpxy_opt    g_uopt;
 
-static char g_udpxy_finfo[ 80 ] = {0};
+static char g_app_info[ 80 ] = {0};
 
 /* misc
  */
@@ -323,11 +318,11 @@ send_http_response( int sockfd, int code, const char* reason)
 
     if ((200 == code) && g_uopt.h200_ftr[0]) {
         msglen = snprintf( msg, sizeof(msg) - 1, "HTTP/1.1 %d %s\r\nServer: %s\r\n%s\r\n%s\r\n\r\n",
-            code, reason, g_udpxy_finfo, CONTENT_TYPE, g_uopt.h200_ftr);
+            code, reason, g_app_info, CONTENT_TYPE, g_uopt.h200_ftr);
     }
     else {
         msglen = snprintf( msg, sizeof(msg) - 1, "HTTP/1.1 %d %s\r\nServer: %s\r\n%s\r\n\r\n",
-                code, reason, g_udpxy_finfo, CONTENT_TYPE );
+                code, reason, g_app_info, CONTENT_TYPE );
     }
     if( msglen <= 0 ) return ERR_INTERNAL;
 
@@ -1148,21 +1143,9 @@ process_requests (tmfd_t* asock, size_t *alen, fd_set* rset, struct server_ctx* 
 
 
 static void
-init_app_info()
-{
-    if ('\0' == g_udpxy_finfo[0]) {
-        (void) snprintf( g_udpxy_finfo, sizeof(g_udpxy_finfo),
-                "%s %s-%d.%d (%s) %s [%s]", g_udpxy_app, VERSION,
-                BUILDNUM, PATCH, BUILD_TYPE,
-            COMPILE_MODE, get_sysinfo(NULL) );
-    }
-}
-
-
-static void
 usage( const char* app, FILE* fp )
 {
-    (void) fprintf (fp, "%s\n", g_udpxy_finfo);
+    (void) fprintf (fp, "%s\n", g_app_info);
     (void) fprintf (fp, "usage: %s [-vTS] [-a listenaddr] -p port "
             "[-m mcast_ifc_addr] [-c clients] [-l logfile] "
             "[-B sizeK] [-n nice_incr]\n", app );
@@ -1225,7 +1208,7 @@ udpxy_main( int argc, char* const argv[] )
 
     struct sigaction qact, iact, cact, oldact;
 
-    init_app_info();
+    mk_app_info(g_udpxy_app, g_app_info, sizeof(g_app_info) - 1);
     (void) get_pidstr( PID_RESET, "S" );
 
     rc = init_uopt( &g_uopt );
@@ -1471,16 +1454,16 @@ udpxy_main( int argc, char* const argv[] )
             rc = ERR_INTERNAL; break;
         }
 
-        syslog( LOG_NOTICE, "%s is starting\n", g_udpxy_finfo );
-        TRACE( printcmdln( g_flog, g_udpxy_finfo, argc, argv ) );
+        syslog( LOG_NOTICE, "%s is starting\n", g_app_info );
+        TRACE( printcmdln( g_flog, g_app_info, argc, argv ) );
 
         rc = srv_loop( ipaddr, port, mcast_addr );
 
         syslog( LOG_NOTICE, "%s is exiting with rc=[%d]\n",
-                g_udpxy_finfo, rc);
+                g_app_info, rc);
         TRACE( tmfprintf( g_flog, "%s is exiting with rc=[%d]\n",
                     g_udpxy_app, rc ) );
-        TRACE( printcmdln( g_flog, g_udpxy_finfo, argc, argv ) );
+        TRACE( printcmdln( g_flog, g_app_info, argc, argv ) );
     } while(0);
 
     if( '\0' != pidfile[0] ) {

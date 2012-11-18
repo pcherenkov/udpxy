@@ -42,6 +42,12 @@
 #include "mtrace.h"
 #include "osdef.h"
 
+extern const char  COMPILE_MODE[];
+extern const char  VERSION[];
+extern const int   BUILDNUM;
+extern const char  BUILD_TYPE[];
+extern const int   PATCH;
+
 static char s_sysinfo [80] = "\0";
 
 extern struct udpxy_opt g_uopt;
@@ -1077,6 +1083,19 @@ get_sysinfo (int* perr)
             uts.sysname, uts.release, uts.machine);
     }
     return s_sysinfo;
+}
+
+
+void
+mk_app_info(const char *appname, char *info, size_t infolen)
+{
+    assert(info);
+    if ('\0' == *info) {
+        (void) snprintf(info, infolen,
+                "%s %s-%d.%d (%s) %s [%s]", appname, VERSION,
+                BUILDNUM, PATCH, BUILD_TYPE,
+            COMPILE_MODE, get_sysinfo(NULL) );
+    }
 }
 
 
