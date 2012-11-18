@@ -210,5 +210,10 @@ Patch 2 (14-Oct-2012)
     (*) Static linking enabled through LDFLAGS=-static (as a prefix to make);
     (*) EPIPE and other 'not really errors' should not go to syslog (time-outs still WILL);
 
+Patch 3 (18-Nov-2012)
+    (*) Makefile changed towards better GNU compatibility: added $PREFIX, $DESTDIR, $CPPFLAGS; dist & install-strip targets;
+    (*) English-language udpxy.1, udpxrec.1 man pages added;
+    (*) icc, Sun C & HP-UX C compiler support dropped (Makefile);
+
 # __EOF__
 
