@@ -3,11 +3,10 @@
 .\"
 .\" Original: (pcherenkov@gmail.com)
 .\"
-.\"
 .TH udpxy 1 "November 17, 2012" "Version 1.0" "udpxy manual page"
 
 .SH NAME
-udpxy - UDP-to-HTTP multicast traffic relay daemon.
+udpxy - a UDP-to-HTTP multicast traffic relay daemon.
 
 .SH SYNOPSIS
 .B udpxy
@@ -17,9 +16,62 @@ udpxy - UDP-to-HTTP multicast traffic relay daemon.
 
 .SH DESCRIPTION
 .PP
-udpxy is a \fIUDP-to-HTTP multicast traffic relay daemon\fP:
-it forwards UDP traffic from a given multicast subscription
-to the requesting HTTP client.
+udpxy is a \fIUDP-to-HTTP multicast traffic relay daemon\fP: it forwards UDP traffic
+from a given multicast subscription to the requesting HTTP client.
+.PP
+udpxy listens (on a dedicated address/port) for HTTP requests issued by clients.
+A client request should be structured as:
+.PP
+http://{\fIaddress\fP}:{\fIport\fP}/{\fIcmd\fP}/{\fImgroup_address\fP}[\fBSEP\fP]{\fImgroup_port\fP}
+.TP 8
+.B [SEP]
+:|%|~|+|-|^
+.TP 8
+.B {cmd}
+udp|rtp
+
+.PP
+where \fIaddress\fP and \fIport\fP match the listening \fIaddress/port\fP combination of udpxy,
+and \fImgroup_address\fP:\fImgroup_port\fP identify the multicast group/channel to subscribe to.
+
+.PP
+.TP 8
+.B udp
+\fIudp\fP command will have udpxy probe for known types of payload
+(such as \fIMPEG-TS\fP and \fIRTP over MPEG-TS\fP);
+.TP 8
+.B rtp
+\fIrtp\fP command makes udpxy assume \fIRTP over MPEG-TS\fP payload, thus skipping the probes.
+
+.PP
+udpxy will start a separate \fIclient process\fP for each new relay request (within the specified limit
+on active clients).
+The client process will relay/forward all network traffic received (via a UDP socket) from the
+specified multicast group to the requesting HTTP connection.
+
+.PP
+udpxy also supports a few administrative requests:
+
+.PP
+.TP 8
+.B status
+http://\fIaddress\fP:\fIport\fP/\fBstatus\fP/
+to send back an HTML page with daemon status and client statistics.
+.TP 8
+.B restart
+http://\fIaddress\fP:\fIport\fP/\fBrestart\fP/
+to close all active connections and restart.
+
+
+.SH EXAMPLES
+.PP
+http://192.168.0.12:5056/udp/224.0.2.26:24012
+.PP
+http://192.168.0.12:5056/rtp/224.0.2.26:24012
+.PP
+http://192.168.0.15:5056/rtp/224.0.2.26^24055
+.PP
+http://192.168.0.15:5056/status/
 
 .SH OPTIONS
 udpxy accepts the following options:
@@ -55,10 +107,36 @@ Maximum number of messages to buffer (\fI\-1\fP = \fIall\fP) [default = \fI1\fP]
 Maximum time (in seconds) to hold data in a buffer (\fI\-1\fP = \fIunlimited\fP) [default = \fI1\fP].
 .TP 8
 .B \-M \fI<sec>\fP
-Renew multicast subscription every N seconds (\fIskip\fP if \fI0\fP) [default = \fI0\fP].
+Renew multicast subscription every M seconds (\fIskip\fP if \fI0\fP) [default = \fI0\fP].
 .TP 8
 .B \-p \fI<port>\fP
 Port to listen on.
+
+.SH PAYLOAD TYPES AND HANDLING
+
+.PP
+udpxy recognizes \fIMPEG-TS\fP and \fIRTP over MPEG-TS\fP payloads within relayed packets;
+if udpxy encounters RTP payload it automatically 'translates' it to MPEG-TS (by stripping RTP headers)
+so that media players not recognizing RTP could still play back the stream.
+.PP
+So far, no translation is performed for other payload types.
+
+.SH RECORDING MPEG TRAFFIC
+.PP
+udpxy includes functionality to record captured traffic as
+\fIraw MPEG-TS stream\fP into a file. This functionality is enabled through \fBudpxrec\fP:
+a bundled-in application that is linked together with udpxy (as one executable).
+.PP
+udpxrec is invoked via a symbolic link (named \fBudpxrec\fP) to the udpxy executable
+(i.e. \fBdo not rename\fP udpxy executable).
+.PP
+udpxrec creates MPEG files encapsulating MPEG-TS segments; certain media players
+will \fBNOT\fP play such files; in order to make them playable the stream must be transcoded
+to MPEG-PS; vlc 'knows' how to do such transcoding, here is a command-line example:
+.PP
+.B vlc input-ts.mpg --sout="#std{access=file,mux=ps,dst=out-ps.mpg}"
+.PP
+The resulting MPEG-PS file can be played back by most media players.
 
 
 .SH ENVIRONMENT
@@ -93,13 +171,13 @@ size of the listener socket's \fIbacklog\fP, default=\fI16\fP;
 low watermaek on the receiving (m-cast) socket, default=\fI0\fP (\fInot set\fP);
 .TP 8
 .B UDPXY_SSOCKBUF_NOSYNC
-do not sync \fIinbound\fP (UDP) socket's buffer size (with value set by \fI\-B\fP), default=\fI1\fP (\fIsync\fP);
+do not sync \fIinbound\fP (UDP) socket's buffer size (with the value set by \fI\-B\fP), default=\fI1\fP (\fIsync\fP);
 .TP 8
 .B UDPXY_DSOCKBUF_NOSYNC
-do not sync \fIoutbound\fP (TCP) socket's buffer size (with value set by \fI\-B\fP), default=\fI1\fP (\fIsync\fP);
+do not sync \fIoutbound\fP (TCP) socket's buffer size (with the value set by \fI\-B\fP), default=\fI1\fP (\fIsync\fP);
 .TP 8
 .B UDPXY_TCP_NODELAY
-disable \fINagle algorithm\fP on the newly accepted socket (\fIfaster channel switching\fP), default=\fI1\fP;
+disable \fINagle algorithm\fP on the newly accepted socket (faster channel switching), default=\fI1\fP;
 .TP 8
 .B UDPXY_HTTP200_FTR_FILE
 append contents of the given text file to the \fIHTTP 200\fP response, default=\fInone\fP;
