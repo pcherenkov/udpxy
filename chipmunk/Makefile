@@ -25,6 +25,7 @@ UPXC := upxc
 UDPXREC := udpxrec
 
 STRIP := /usr/bin/strip
+GZIP  := /bin/gzip
 
 MKDEPOPT := -MM
 DEBUG_ON := -g
@@ -34,6 +35,7 @@ ALL_FLAGS = -W -Wall -Werror --pedantic $(CFLAGS)
 SYSTEM=$(shell uname 2>/dev/null)
 ifeq ($(SYSTEM), FreeBSD)
 MAKE := gmake
+GZIP := /usr/bin/gzip
 endif
 
 ifeq ($(PROFTOOL),gprof)
@@ -59,9 +61,7 @@ ifndef PREFIX
 	PREFIX := /usr/local
 endif
 
-ifdef DESTDIR
-	INSTALLROOT := $(DESTDIR)$(PREFIX)
-endif
+INSTALLROOT := $(DESTDIR)$(PREFIX)
 
 
 ARCDIR = ..
@@ -202,10 +202,11 @@ install:
 	@cp $(EXEC) $(INSTALLROOT)/bin
 	@ls -l $(INSTALLROOT)/bin/$(EXEC)
 	@mkdir -p -m 755 $(MANPAGE_DIR)
-	@cp $(UDPXY_MANPAGE_EN) $(MANPAGE_DIR)
+	@$(GZIP) -c $(UDPXY_MANPAGE_EN) > $(MANPAGE_DIR)/$(UDPXY_MANPAGE_EN).gz
 ifneq (yes, $(NO_UDPXREC))
 	@ln -s $(INSTALLROOT)/bin/$(EXEC) $(INSTALLROOT)/bin/$(UDPXREC)
 	@ls -l $(INSTALLROOT)/bin/$(UDPXREC)
+	@$(GZIP) -c $(UDPXREC_MANPAGE_EN) > $(MANPAGE_DIR)/$(UDPXREC_MANPAGE_EN).gz
 endif
 	@echo "Installation of udpxy is complete"
 
@@ -216,6 +217,7 @@ install-strip: install
 
 uninstall:
 	@rm -f $(INSTALLROOT)/bin/$(EXEC) $(INSTALLROOT)/bin/$(UDPXREC)
+	@rm -f $(MANPAGE_DIR)/$(UDPXY_MANPAGE_EN).gz $(MANPAGE_DIR)/$(UDPXREC_MANPAGE_EN).gz
 	@echo "udpxy successfully uninstalled"
 
 ifneq ($(MAKECMDGOALS), clean)

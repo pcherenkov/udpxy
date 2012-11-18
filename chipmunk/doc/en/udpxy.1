@@ -106,6 +106,9 @@ Maximum number of messages to buffer (\fI\-1\fP = \fIall\fP) [default = \fI1\fP]
 .B \-H \fI<sec>\fP
 Maximum time (in seconds) to hold data in a buffer (\fI\-1\fP = \fIunlimited\fP) [default = \fI1\fP].
 .TP 8
+.B \-n \fI<nice_incr>\fP
+Nice value increment [default = \fI0\fP].
+.TP 8
 .B \-M \fI<sec>\fP
 Renew multicast subscription every M seconds (\fIskip\fP if \fI0\fP) [default = \fI0\fP].
 .TP 8
@@ -193,6 +196,9 @@ allow only \fIN\fP milliseconds of reading data when blocked on a \fIwrite(2)\fP
 
 .SH AUTHORS
 Pavel V. Cherenkov and all the good people who submitted patches or otherwise contributed to the project.
+
+.SH "SEE ALSO"
+.BR udpxrec (1)
 
 .\" __EOF__
 
