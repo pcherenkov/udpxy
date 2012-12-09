@@ -6,12 +6,12 @@
 .TH udpxrec 1 "November 18, 2012" "Version 1.0" "udpxrec manual page"
 
 .SH NAME
-udpxrec - a programmable multicast traffic recording utility.
+udpxrec \- a programmable multicast traffic recording utility.
 
 .SH SYNOPSIS
 .B udpxrec
 [\-v] [\-b \fI<begin_time>\fP] [\-e \fI<end_time>\fP] [\-M \fI<maxfilesize>\fP] [\-p \fI<pidfile>\fP] [\-B \fI<bufsizeK>\fP]
-[\-n \fI<nice_incr>\fP] [-u \fI<seconds_to_wait>\fP] [\-m \fI<mcast_ifc_addr>\fP] [\-l \fI<logfile>\fP] \-c \fI<src_addr>\fP:\fI<port>\fP \fI<dstfile>\fP
+[\-n \fI<nice_incr>\fP] [\-u \fI<seconds_to_wait>\fP] [\-m \fI<mcast_ifc_addr>\fP] [\-l \fI<logfile>\fP] \-c \fI<src_addr>\fP:\fI<port>\fP \fI<dstfile>\fP
 
 .SH DESCRIPTION
 .PP
@@ -59,7 +59,7 @@ Seconds to wait before updating on how long till recording starts.
 
 .SH EXAMPLES
 .PP
-.B udpxrec -b 15:45.00 -e +2:00.00 -M 1.5Gb -n 2 -B 64K -c 224.0.11.31:5050  /opt/video/tv5.mpg
+.B udpxrec \-b 15:45.00 \-e +2:00.00 \-M 1.5Gb \-n 2 \-B 64K \-c 224.0.11.31:5050  /opt/video/tv5.mpg
 .PP
 Begin recording multicast channel 224.0.11.31:5050 at 15:45 today,
 finish recording in two hours or if destination file size >= 1.5 Gb;

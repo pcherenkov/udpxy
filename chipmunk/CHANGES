@@ -215,5 +215,8 @@ Patch 3 (18-Nov-2012)
     (*) English-language udpxy.1, udpxrec.1 man pages added;
     (*) icc, Sun C & HP-UX C compiler support dropped (Makefile);
 
+Patch 4 (9-Dec-2012)
+    (*) manpage & Makefile corrections applied (integrated patches from Alex Z (ad_user));
+
 # __EOF__
 

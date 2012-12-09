@@ -6,13 +6,13 @@
 .TH udpxy 1 "November 17, 2012" "Version 1.0" "udpxy manual page"
 
 .SH NAME
-udpxy - a UDP-to-HTTP multicast traffic relay daemon.
+udpxy \- a UDP-to-HTTP multicast traffic relay daemon.
 
 .SH SYNOPSIS
 .B udpxy
 [\-vTS] [\-a \fI<listenaddr>\fP] [\-m \fI<mcast_ifc_addr>\fP] [\-c \fI<clients>\fP]
 [\-l \fI<logfile>\fP] [\-B \fI<sizeK>\fP] [\-R \fI<msgs>\fP] [\-H \fI<sec>\fP]
-[\-n \fI<nice_incr>\fP] [\-M \fI<sec>\fP] -p \fI<port>\fP
+[\-n \fI<nice_incr>\fP] [\-M \fI<sec>\fP] \-p \fI<port>\fP
 
 .SH DESCRIPTION
 .PP
@@ -25,7 +25,7 @@ A client request should be structured as:
 http://{\fIaddress\fP}:{\fIport\fP}/{\fIcmd\fP}/{\fImgroup_address\fP}[\fBSEP\fP]{\fImgroup_port\fP}
 .TP 8
 .B [SEP]
-:|%|~|+|-|^
+:|%|~|+|\-|^
 .TP 8
 .B {cmd}
 udp|rtp
@@ -38,10 +38,10 @@ and \fImgroup_address\fP:\fImgroup_port\fP identify the multicast group/channel 
 .TP 8
 .B udp
 \fIudp\fP command will have udpxy probe for known types of payload
-(such as \fIMPEG-TS\fP and \fIRTP over MPEG-TS\fP);
+(such as \fIMPEG\-TS\fP and \fIRTP over MPEG\-TS\fP);
 .TP 8
 .B rtp
-\fIrtp\fP command makes udpxy assume \fIRTP over MPEG-TS\fP payload, thus skipping the probes.
+\fIrtp\fP command makes udpxy assume \fIRTP over MPEG\-TS\fP payload, thus skipping the probes.
 
 .PP
 udpxy will start a separate \fIclient process\fP for each new relay request (within the specified limit
@@ -118,8 +118,8 @@ Port to listen on.
 .SH PAYLOAD TYPES AND HANDLING
 
 .PP
-udpxy recognizes \fIMPEG-TS\fP and \fIRTP over MPEG-TS\fP payloads within relayed packets;
-if udpxy encounters RTP payload it automatically 'translates' it to MPEG-TS (by stripping RTP headers)
+udpxy recognizes \fIMPEG\-TS\fP and \fIRTP over MPEG\-TS\fP payloads within relayed packets;
+if udpxy encounters RTP payload it automatically 'translates' it to MPEG\-TS (by stripping RTP headers)
 so that media players not recognizing RTP could still play back the stream.
 .PP
 So far, no translation is performed for other payload types.
@@ -127,29 +127,29 @@ So far, no translation is performed for other payload types.
 .SH RECORDING MPEG TRAFFIC
 .PP
 udpxy includes functionality to record captured traffic as
-\fIraw MPEG-TS stream\fP into a file. This functionality is enabled through \fBudpxrec\fP:
-a bundled-in application that is linked together with udpxy (as one executable).
+\fIraw MPEG\-TS stream\fP into a file. This functionality is enabled through \fBudpxrec\fP:
+a bundled\-in application that is linked together with udpxy (as one executable).
 .PP
 udpxrec is invoked via a symbolic link (named \fBudpxrec\fP) to the udpxy executable
 (i.e. \fBdo not rename\fP udpxy executable).
 .PP
-udpxrec creates MPEG files encapsulating MPEG-TS segments; certain media players
+udpxrec creates MPEG files encapsulating MPEG\-TS segments; certain media players
 will \fBNOT\fP play such files; in order to make them playable the stream must be transcoded
-to MPEG-PS; vlc 'knows' how to do such transcoding, here is a command-line example:
+to MPEG\-PS; vlc 'knows' how to do such transcoding, here is a command-line example:
 .PP
-.B vlc input-ts.mpg --sout="#std{access=file,mux=ps,dst=out-ps.mpg}"
+.B vlc input\-ts.mpg \-\-sout="#std{access=file,mux=ps,dst=out-ps.mpg}"
 .PP
 The resulting MPEG-PS file can be played back by most media players.
 
 
 .SH ENVIRONMENT
 udpxy utilizes the following environment variables to compliment its
-command-line options; the variables are considered for the options that
+command\-line options; the variables are considered for the options that
 most people would not need to change too often (or simply inconvenient
 to use from the command line).
 .PP
 \fBNB\fP: If there is a command-line switch that would intersect in functionality
-with an environment variable, the switch \fIalways\fP has the higher priority.
+with an environment variable, the switch \fIalways\fP has higher priority.
 .PP
 .TP 8
 .B UDPXY_RCV_TMOUT
@@ -171,7 +171,7 @@ timeout (sec) to \fIselect(2)\fP in server loop (unused if \fIpselect(2)\fP is e
 size of the listener socket's \fIbacklog\fP, default=\fI16\fP;
 .TP 8
 .B UDPXY_SRV_RLWMARK
-low watermaek on the receiving (m-cast) socket, default=\fI0\fP (\fInot set\fP);
+low watermaek on the receiving (m\-cast) socket, default=\fI0\fP (\fInot set\fP);
 .TP 8
 .B UDPXY_SSOCKBUF_NOSYNC
 do not sync \fIinbound\fP (UDP) socket's buffer size (with the value set by \fI\-B\fP), default=\fI1\fP (\fIsync\fP);
@@ -189,7 +189,7 @@ append contents of the given text file to the \fIHTTP 200\fP response, default=\
 append the text (line) to the \fIHTTP 200\fP response, default=\fInone\fP;
 .TP 8
 .B UDPXY_ALLOW_PAUSES
-if blocked on a \fIwrite(2)\fP, keep reading data until the buffer (\fB-B\fP \fI<sizeK>\fP) is full, default=\fIdisabled\fP;
+if blocked on a \fIwrite(2)\fP, keep reading data until the buffer (\fB\-B\fP \fI<sizeK>\fP) is full, default=\fIdisabled\fP;
 .TP 8
 .B UDPXY_PAUSE_MSEC
 allow only \fIN\fP milliseconds of reading data when blocked on a \fIwrite(2)\fP.

@@ -185,14 +185,14 @@ dist:
 	@ls -l $(ARCFILE)
 	@rm -fr $(DISTRO_DIR)
 
-install:
+install: $(EXEC)
 	@mkdir -p -m 755 $(INSTALLROOT)/bin
 	@cp $(EXEC) $(INSTALLROOT)/bin
 	@ls -l $(INSTALLROOT)/bin/$(EXEC)
 	@mkdir -p -m 755 $(MANPAGE_DIR)
 	@$(GZIP) -c $(UDPXY_MANPAGE_EN) > $(MANPAGE_DIR)/$(UDPXY_MAN1).gz
 ifneq (yes, $(NO_UDPXREC))
-	@ln -s $(INSTALLROOT)/bin/$(EXEC) $(INSTALLROOT)/bin/$(UDPXREC)
+	@cp $(UDPXREC) $(INSTALLROOT)/bin/$(UDPXREC)
 	@ls -l $(INSTALLROOT)/bin/$(UDPXREC)
 	@$(GZIP) -c $(UDPXREC_MANPAGE_EN) > $(MANPAGE_DIR)/$(UDPXREC_MAN1).gz
 endif
