@@ -359,7 +359,7 @@ check_mcast_refresh( int msockfd, time_t* last_tm,
     assert( (msockfd > 0) && last_tm && mifaddr );
     now = time(NULL);
 
-    if( difftime( now, *last_tm ) >= (double)g_uopt.mcast_refresh ) {
+    if( now - *last_tm >= g_uopt.mcast_refresh ) {
         (void) renew_multicast( msockfd, mifaddr );
         *last_tm = now;
     }
@@ -829,15 +829,18 @@ report_status( int sockfd, const struct server_ctx* ctx, int options )
     int rc = 0;
     ssize_t n, nsent;
     size_t nlen = 0, bufsz, i;
+    struct client_ctx *clc = NULL;
 
     static size_t BYTES_HDR = 2048;
     static size_t BYTES_PER_CLI = 512;
 
     assert( (sockfd > 0) && ctx );
 
-    for (bufsz=BYTES_HDR, i=0; i < ctx->clmax; ++i) {
-        bufsz+=BYTES_PER_CLI;
+    bufsz = BYTES_HDR + ctx->clmax * BYTES_PER_CLI;
+    for (i = 0, clc=ctx->cl; i < ctx->clmax; ++i, ++clc) {
+        bufsz += strlen(clc->tail);
     }
+
     buf = malloc(bufsz);
     if( !buf ) {
         mperror(g_flog, ENOMEM, "malloc for %ld bytes for HTTP buffer "
