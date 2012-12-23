@@ -217,6 +217,8 @@ Patch 3 (18-Nov-2012)
 
 Patch 4 (9-Dec-2012)
     (*) manpage & Makefile corrections applied (integrated patches from Alex Z (ad_user));
+Patch 5 (13-Dec-2012)
+    (*) Makefile corrections (purged deprecated options & variables);
 
 # __EOF__
 

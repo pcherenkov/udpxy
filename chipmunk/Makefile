@@ -21,7 +21,6 @@
 .SUFFIXES : .o .c .d
 
 EXEC := udpxy
-UPXC := upxc
 UDPXREC := udpxrec
 
 STRIP := /usr/bin/strip
@@ -36,10 +35,6 @@ SYSTEM=$(shell uname 2>/dev/null)
 ifeq ($(SYSTEM), FreeBSD)
 MAKE := gmake
 GZIP := /usr/bin/gzip
-endif
-
-ifeq ($(PROFTOOL),gprof)
-	ALL_FLAGS += -pg
 endif
 
 BUILDFILE = BUILD
@@ -66,14 +61,9 @@ INSTALLROOT := $(DESTDIR)$(PREFIX)
 ARCDIR = ..
 ARCFILE := $(ARCDIR)/$(EXEC).$(VERSION).$(BUILDNO)-$(PATCHNO)-$(BTYPE).tar.gz
 
-COMMON_OPT :=
-ifneq (yes,$(NO_UDPXREC))
-	COMMON_OPT := $(COMMON_OPT) -DUDPXREC_MOD
-endif
-
-DEBUG_OPT  := $(COMMON_OPT) $(USER_OPT) $(DEBUG_ON) -DTRACE_MODULE
-PROD_OPT   := $(COMMON_OPT) $(USER_OPT) -DNDEBUG -DTRACE_MODULE
-LEAN_OPT   := $(COMMON_OPT) -DNDEBUG $(USER_OPT)
+DEBUG_OPT  := $(COPT) $(DEBUG_ON) -DTRACE_MODULE
+PROD_OPT   := $(COPT) -DNDEBUG -DTRACE_MODULE
+LEAN_OPT   := $(COPT) -DNDEBUG
 
 UTILDIR := util
 
@@ -83,10 +73,10 @@ UDPXY_MAN1   := udpxy.1
 UDPXREC_MAN1 := udpxrec.1
 
 UDPXY_MANPAGE_EN := doc/en/$(UDPXY_MAN1)
-UDPXY_MANPAGE_RU := doc/ru/$(UDPXY_MAN1)
+# UDPXY_MANPAGE_RU := doc/ru/$(UDPXY_MAN1)
 
 UDPXREC_MANPAGE_EN := doc/en/$(UDPXREC_MAN1)
-UDPXYREC_MANPAGE_RU := doc/ru/$(UDPXREC_MAN1)
+# UDPXYREC_MANPAGE_RU := doc/ru/$(UDPXREC_MAN1)
 
 MANPAGE_DIR := $(DESTDIR)/usr/share/man/man1
 
@@ -95,8 +85,10 @@ DOCFILES := *.txt $(DOCDIR)
 
 SRC := udpxy.c sloop.c rparse.c util.c prbuf.c ifaddr.c ctx.c mkpg.c \
 	rtp.c uopt.c dpkt.c netop.c extrn.c main.c
+
 ifneq (yes,$(NO_UDPXREC))
-	SRC := $(SRC) udpxrec.c
+	SRC   += udpxrec.c
+	CDEFS += -DUDPXREC_MOD
 endif
 
 OBJ := ${SRC:.c=.o}
@@ -112,23 +104,23 @@ debug ldebug rdebug lean verify touch incbuild
 
 release:
 	@echo -e "\nMaking a [release] version (use 'debug' target as an alternative)\n"
-	@$(MAKE) all "COPT=${PROD_OPT}" "CFLAGS=${CFLAGS}"
+	@$(MAKE) all "COPT=${PROD_OPT}" "CFLAGS=${CFLAGS}" "CDEFS=${CDEFS}" "CPPFLAGS=${CPPFLAGS}"
 
 debug:
 	@echo -e "\nMaking a [debug] version (use 'release' target as an alternative)\n"
-	@$(MAKE) all "COPT=${DEBUG_OPT}" "CFLAGS=${CFLAGS}"
+	@$(MAKE) all "COPT=${DEBUG_OPT}" "CFLAGS=${CFLAGS}" "CDEFS=${CDEFS}" "CPPFLAGS=${CPPFLAGS}"
 
 lean:
 	@echo -e "\nMaking a [lean] version (minimal size)\n"
-	@$(MAKE) all "COPT=${LEAN_OPT}" "CFLAGS=${CFLAGS}"
+	@$(MAKE) all "COPT=${LEAN_OPT}" "CFLAGS=${CFLAGS}" "CDEFS=${CDEFS}" "CPPFLAGS=${CPPFLAGS}"
 
 ldebug:
 	@echo -e "\nMaking a [lean] version with debug info\n"
-	@$(MAKE) all "COPT=${LEAN_OPT} ${DEBUG_ON}" "CFLAGS=${CFLAGS}"
+	@$(MAKE) all "COPT=${LEAN_OPT} ${DEBUG_ON}" "CFLAGS=${CFLAGS}" "CDEFS=${CDEFS}" "CPPFLAGS=${CPPFLAGS}"
 
 rdebug:
 	@echo -e "\nMaking a [release] version with debug info\n"
-	@$(MAKE) all "COPT=${PROD_OPT} ${DEBUG_ON}"
+	@$(MAKE) all "COPT=${PROD_OPT} ${DEBUG_ON}" "CDEFS=${CDEFS}" "CPPFLAGS=${CPPFLAGS}"
 
 verify:
 	@echo -e "\nVerifying all build targets\n"
@@ -144,7 +136,7 @@ verify:
 	@$(MAKE) debug
 	@$(MAKE) clean
 
-mk_deps := $(CC) $(CFLAGS) $(MKDEPOPT) $(SRC)
+mk_deps := $(CC) $(CFLAGS) $(CDEFS) $(MKDEPOPT) $(SRC)
 
 all:	$(DEPFILE) $(EXEC)
 
