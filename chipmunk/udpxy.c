@@ -831,14 +831,14 @@ report_status( int sockfd, const struct server_ctx* ctx, int options )
     size_t nlen = 0, bufsz, i;
     struct client_ctx *clc = NULL;
 
-    static size_t BYTES_HDR = 2048;
-    static size_t BYTES_PER_CLI = 512;
+    enum {BYTES_HDR = 2048, BYTES_PER_CLI = 256};
 
     assert( (sockfd > 0) && ctx );
 
-    bufsz = BYTES_HDR + ctx->clmax * BYTES_PER_CLI;
+    bufsz = BYTES_HDR;
     for (i = 0, clc=ctx->cl; i < ctx->clmax; ++i, ++clc) {
-        bufsz += strlen(clc->tail);
+        if( ctx->cl[i].pid > 0 )
+            bufsz += BYTES_PER_CLI + strlen(clc->tail);
     }
 
     buf = malloc(bufsz);

@@ -223,6 +223,8 @@ Patch 6 (23-Dec-2012)
     (*) report_status() adjusts report-buffer size for client tails;
     (*) attempt to fix strict-aliasing compiler warnings in sock_info();
     (*) optimizing: removed difftime() as redundant on a POSIX system (may affect non-POSIX ports).
+Patch 7 (24-Dec-2012)
+    (*) more work on report_status() to prevent memory exhaustion when using 'tails' in requests;
 
 # __EOF__
 
