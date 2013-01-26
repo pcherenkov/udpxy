@@ -309,7 +309,6 @@ send_http_response( int sockfd, int code, const char* reason)
     static char msg[ 3072 ];
     ssize_t nsent;
     a_socklen_t msglen;
-    static const char CONTENT_TYPE[] = "Content-Type:application/octet-stream";
     int err = 0;
 
     assert( (sockfd > 0) && code && reason );
@@ -318,11 +317,11 @@ send_http_response( int sockfd, int code, const char* reason)
 
     if ((200 == code) && g_uopt.h200_ftr[0]) {
         msglen = snprintf( msg, sizeof(msg) - 1, "HTTP/1.1 %d %s\r\nServer: %s\r\n%s\r\n%s\r\n\r\n",
-            code, reason, g_app_info, CONTENT_TYPE, g_uopt.h200_ftr);
+            code, reason, g_app_info, g_uopt.cnt_type, g_uopt.h200_ftr);
     }
     else {
         msglen = snprintf( msg, sizeof(msg) - 1, "HTTP/1.1 %d %s\r\nServer: %s\r\n%s\r\n\r\n",
-                code, reason, g_app_info, CONTENT_TYPE );
+                code, reason, g_app_info, g_uopt.cnt_type );
     }
     if( msglen <= 0 ) return ERR_INTERNAL;
 
