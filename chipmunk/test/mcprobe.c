@@ -85,6 +85,8 @@ setup_mcast_socket( const char* mifcstr,
     int port = 0;
     int ON = 1;
     socklen_t len = sizeof(msa);
+    int ifc_idx = -1;
+    struct group_req greq;
 
     assert( mifcstr && ipstr );
 
@@ -116,8 +118,15 @@ setup_mcast_socket( const char* mifcstr,
     }
 
     sa.sin_port = htons( (short)port );
-    if( 0 == inet_aton( mifcstr, &mifaddr ) )
-        return -5;
+    if( 0 == inet_aton( mifcstr, &mifaddr ) ) {
+        ifc_idx = (int) if_nametoindex(mifcstr);
+        if (0 == ifc_idx)
+            return -5;
+        else {
+            fprintf(g_flog, "Interface [%s] matched to index [%d]\n",
+                mifcstr, ifc_idx);
+        }
+    }
 
     /* socket setup */
     do {
@@ -149,18 +158,33 @@ setup_mcast_socket( const char* mifcstr,
             break;
         }
 
-        (void) memset( &mreq, 0, sizeof(mreq) );
-        (void) memcpy( &mreq.imr_multiaddr, &(sa.sin_addr),
-                sizeof(struct in_addr) );
+        if (ifc_idx <= 0) {
+            (void) fprintf(g_flog, "Using protocol-specific multicast API\n");
+            (void) memset( &mreq, 0, sizeof(mreq) );
+            (void) memcpy( &mreq.imr_multiaddr, &(sa.sin_addr),
+                    sizeof(struct in_addr) );
 
-        (void) memcpy( &mreq.imr_interface, &mifaddr,
-                sizeof(struct in_addr) );
+            (void) memcpy( &mreq.imr_interface, &mifaddr,
+                    sizeof(struct in_addr) );
 
-        rc = setsockopt( sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-                &mreq, sizeof(mreq) );
-        if( 0 != rc ) {
-            perror( "setsockopt IP_ADD_MEMBERSHIP" );
-            break;
+            rc = setsockopt( sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+                    &mreq, sizeof(mreq) );
+            if( 0 != rc ) {
+                perror( "setsockopt IP_ADD_MEMBERSHIP" );
+                break;
+            }
+        }
+        else {
+            (void) fprintf(g_flog, "Using GENERIC multicast API\n");
+            greq.gr_interface = (unsigned)ifc_idx;
+            (void) memcpy(&greq.gr_group, &sa, sizeof(sa));
+
+            rc = setsockopt(sockfd, IPPROTO_IP, MCAST_JOIN_GROUP,
+                    &greq, sizeof(greq));
+            if (rc) {
+                perror("setsockopt MCAST_JOIN_GROUP");
+                break;
+            }
         }
 
     } while(0);
@@ -190,16 +214,19 @@ close_mcast_socket( int msockfd, const char* mifcstr )
     struct sockaddr_in addr;
     struct in_addr  mifaddr;
     socklen_t len = sizeof( addr );
-    int rc = 0;
+    int rc = 0, ifc_idx = -1;
     char ipaddr[ IPv4_STRLEN ] = {0};
+    struct group_req greq;
 
     assert( (msockfd > 0) && mifcstr );
 
     if( msockfd <= 0 ) return;
 
     if( 0 == inet_aton( mifcstr, &mifaddr ) ) {
-        fprintf( g_flog, "%s: inet_aton error for [%s]\n",
-                __func__, mifcstr );
+        ifc_idx = (int) if_nametoindex(mifcstr);
+        if (0 == ifc_idx)
+            fprintf( g_flog, "%s: address/ifc resolution error for [%s]\n",
+                    __func__, mifcstr );
         return;
     }
 
@@ -218,10 +245,22 @@ close_mcast_socket( int msockfd, const char* mifcstr )
                     sizeof(struct in_addr) );
     }
 
-    rc = setsockopt( msockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP,
+    if (ifc_idx <= 0) {
+        rc = setsockopt( msockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP,
                     &mreq, sizeof(mreq) );
-    if( 0 != rc ) {
-        perror( "setsockopt IP_DROP_MEMBERSHIP" );
+        if( 0 != rc ) {
+            perror( "setsockopt IP_DROP_MEMBERSHIP" );
+        }
+    }
+    else {
+        greq.gr_interface = (unsigned)ifc_idx;
+        (void) memcpy(&greq.gr_group, &addr, sizeof(addr));
+
+        rc = setsockopt(msockfd, IPPROTO_IP, MCAST_LEAVE_GROUP,
+                &greq, sizeof(greq));
+        if (rc) {
+            perror("setsockopt MCAST_LEAVE_GROUP");
+        }
     }
 
     rc = close( msockfd );
@@ -434,7 +473,7 @@ main( int argc, char* const argv[] )
                 "Usage: %s mcast_ifc_addr channel_ip:port\n"
                 "Example:\n"
                 "\t mcprobe 192.168.1.1 224.0.2.26:1234\n\n"
-                "(C) 2008 by Pavel V. Cherenkov, licensed under GNU GPLv3\n\n",
+                "(C) 2008-2013 by Pavel V. Cherenkov, licensed under GNU GPLv3\n\n",
                 app );
         return 1;
     }
