@@ -826,11 +826,12 @@ report_status( int sockfd, const struct server_ctx* ctx, int options )
 {
     char *buf = NULL;
     int rc = 0;
-    ssize_t n, nsent;
+    ssize_t n = -1;
     size_t nlen = 0, bufsz, i;
     struct client_ctx *clc = NULL;
 
-    enum {BYTES_HDR = 2048, BYTES_PER_CLI = 256};
+    enum {BLOCKING = 0, NON_BLOCKING = 1};
+    enum {BYTES_HDR = 4096, BYTES_PER_CLI = 512};
 
     assert( (sockfd > 0) && ctx );
 
@@ -852,18 +853,13 @@ report_status( int sockfd, const struct server_ctx* ctx, int options )
     nlen = bufsz;
     rc = mk_status_page( ctx, buf, &nlen, options | MSO_HTTP_HEADER );
 
-    for( n = nsent = 0; (0 == rc) && (nsent < (ssize_t)nlen);  ) {
-        errno = 0;
+    (void) set_nblock(sockfd, BLOCKING);
         n = send( sockfd, buf, (int)nlen, 0 );
-
         if( (-1 == n) && (EINTR != errno) ) {
             mperror(g_flog, errno, "%s: send", __func__);
             rc = ERR_INTERNAL;
-            break;
         }
-
-        nsent += n;
-    }
+    (void) set_nblock(sockfd, NON_BLOCKING);
 
     if( 0 != rc ) {
         TRACE( (void)tmfprintf( g_flog, "Error generating status report\n" ) );
