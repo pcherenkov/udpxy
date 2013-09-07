@@ -111,6 +111,9 @@ get_sockinfo (int sockfd, char* addr, size_t alen, int* port);
 int
 get_peerinfo (int sockfd, char* addr, size_t alen, int* port);
 
+
+
+
 #ifdef __cplusplus
 }
 #endif

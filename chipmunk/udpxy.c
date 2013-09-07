@@ -1,6 +1,6 @@
 /* @(#) udpxy server: main module
  *
- * Copyright 2008-2011 Pavel V. Cherenkov (pcherenkov@gmail.com)
+ * Copyright 2008-2013 Pavel V. Cherenkov (pcherenkov@gmail.com)
  *
  *  This file is part of udpxy.
  *

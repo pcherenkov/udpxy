@@ -40,23 +40,75 @@
 
 extern FILE* g_flog;    /* application log */
 
+/* Create a new bound stream socket 
+ */
+static int mk_bound_stream_sock(const char* ipaddr, int port, int* sockfd);
 
-/* set up (server) listening sockfd
+
+/* listen(2) wrapper. */
+static int Listen(int sockfd, int bklog);
+
+
+/**
+ * Functions:
+ */
+
+
+/* listen(2) wrapper. */
+static int
+Listen(int sockfd, int bklog)
+{
+    int rc = listen(sockfd, (bklog >= 0 ? bklog : 0));
+    if (rc) {
+        mperror(g_flog, errno, "%s: listen", __func__);
+    }
+
+    return rc;
+}
+
+
+/* Set up (server) listening sockfd.
  */
 int
-setup_listener( const char* ipaddr, int port, int* sockfd, int bklog )
+setup_listener(const char* ipaddr, int port, int* sockfd, int bklog)
+{
+    int rc = 0, lsock = *sockfd;
+
+    extern const char IPv4_ALL[];
+
+    assert((port > 0) && NULL != ipaddr);
+    (void)IPv4_ALL;
+    TRACE( (void)tmfprintf( g_flog, "Setting up listener for [%s:%d]\n",
+                ipaddr[0] ? ipaddr : IPv4_ALL, port) );
+
+    if (lsock < 0) {
+        rc = mk_bound_stream_sock(ipaddr, port, &lsock);
+        if (rc) return rc;
+    }
+
+    if (0 != (rc = Listen(lsock, bklog))) {
+        (void) close(lsock);
+        lsock = -1;
+    }
+    else {
+        *sockfd = lsock;
+        TRACE( (void)tmfprintf( g_flog, "Created server socket=[%d], "
+                    "backlog=[%d]\n", lsock, bklog) );
+    }
+
+    return rc;
+}
+
+
+/* Create a new bound stream socket 
+ */
+static int
+mk_bound_stream_sock(const char* ipaddr, int port, int* sockfd)
 {
 #define LOWMARK 10 /* do not accept input of less than X octets */
     int rc, lsock, wmark = LOWMARK;
     struct sockaddr_in servaddr;
     const int ON = 1;
-
-    extern const char IPv4_ALL[];
-
-    assert( (port > 0) && sockfd && ipaddr );
-    (void)IPv4_ALL;
-    TRACE( (void)tmfprintf( g_flog, "Setting up listener for [%s:%d]\n",
-                ipaddr[0] ? ipaddr : IPv4_ALL, port) );
 
     rc = ERR_INTERNAL;
     do {
@@ -105,10 +157,6 @@ setup_listener( const char* ipaddr, int port, int* sockfd, int bklog )
         rc = bind( lsock, (struct sockaddr*)&servaddr, sizeof(servaddr) );
         if( 0 != rc ) break;
 
-        rc = listen (lsock, (bklog > 0 ? bklog : 1));
-        if( 0 != rc ) break;
-
-        rc = 0;
     } while(0);
 
     if( 0 != rc ) {
@@ -121,8 +169,6 @@ setup_listener( const char* ipaddr, int port, int* sockfd, int bklog )
     }
     else {
         *sockfd = lsock;
-        TRACE( (void)tmfprintf( g_flog, "Created server socket=[%d], backlog=[%d]\n",
-                lsock, bklog) );
     }
 
     return rc;

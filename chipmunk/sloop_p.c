@@ -86,12 +86,7 @@ srv_loop( const char* ipaddr, int port,
     g_srv.rcv_tmout = (u_short)g_uopt.rcv_tmout;
     g_srv.snd_tmout = RLY_SOCK_TIMEOUT;
     g_srv.mcast_inaddr = mcast_inaddr;
-
-    /* NB: server socket is non-blocking! */
-    if( 0 != (rc = setup_listener( ipaddr, port, &g_srv.lsockfd,
-            g_uopt.lq_backlog )) ) {
-        return rc;
-    }
+    g_srv.lsockfd = -1;
 
     sigemptyset (&bset);
     sigaddset (&bset, SIGINT);
@@ -112,10 +107,19 @@ srv_loop( const char* ipaddr, int port,
     TRACE( (void)tmfprintf( g_flog, "Entering server loop [%s]\n", SLOOP_TAG) );
     while (1) {
         FD_ZERO( &rset );
-        FD_SET( g_srv.lsockfd, &rset );
         FD_SET( g_srv.cpipe[0], &rset );
 
-        maxfd = (g_srv.lsockfd > g_srv.cpipe[0] ) ? g_srv.lsockfd : g_srv.cpipe[0];
+        if (nasock < max_nasock) {
+            if (-1 == g_srv.lsockfd) {
+                rc = setup_listener(ipaddr, port, &g_srv.lsockfd,
+                    g_uopt.lq_backlog);
+                if (rc) break;
+            }
+            FD_SET( g_srv.lsockfd, &rset );
+        }
+
+        maxfd = (g_srv.lsockfd > g_srv.cpipe[0])
+                ? g_srv.lsockfd : g_srv.cpipe[0];
         for (i = 0; (size_t)i < nasock; ++i) {
             assert (asock[i].fd >= 0);
             FD_SET (asock[i].fd, &rset);
@@ -163,14 +167,16 @@ srv_loop( const char* ipaddr, int port,
         if ((0 < nasock) &&
                  (0 < (nrdy - (FD_ISSET(g_srv.lsockfd, &rset) ? 1 : 0)))) {
             process_requests (asock, &nasock, &rset, &g_srv);
-            /* n now contains # (yet) unprocessed accepted sockets */
+            /* nasock now contains # (yet) unprocessed accepted sockets */
         }
 
-        if (FD_ISSET(g_srv.lsockfd, &rset)) {
+        if (g_srv.lsockfd >= 0 && FD_ISSET(g_srv.lsockfd, &rset)) {
             if (nasock >= max_nasock) {
-                (void) tmfprintf (g_flog, "Cannot accept sockets beyond "
-                    "the limit [%ld/%ld], skipping\n",
-                    (long)nasock, (long)max_nasock);
+                (void) close(g_srv.lsockfd);
+                g_srv.lsockfd = -1;
+
+                (void)tmfprintf(g_flog, "Too many connections [%ld accepted]: "
+                    "listener temporarily disabled\n", (long)nasock);
             }
             else {
                 n = max_nasock - nasock; /* append asock */
