@@ -97,7 +97,7 @@ mk_client_entries( const struct server_ctx* ctx,
 
             if (n > max_cli_mem)
                 max_cli_mem = n;
-            if (client->tail && strlen(client->tail) > max_cli_tail)
+            if (client->tail && (ssize_t)strlen(client->tail) > max_cli_tail)
                 max_cli_tail = strlen(client->tail);
 
             total += n;
