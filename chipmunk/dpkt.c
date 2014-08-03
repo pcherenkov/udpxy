@@ -62,6 +62,7 @@ fmt2str( upxfmt_t fmt )
 {
     int ifmt = fmt;
 
+    (void) UPXDT_LEN;
     assert( (ifmt >= 0 ) && (ifmt < UPXDT_LEN) );
     return upxfmt_NAME[ ifmt ];
 }
