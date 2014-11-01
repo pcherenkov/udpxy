@@ -242,7 +242,7 @@ calc_buf_settings( ssize_t* bufmsgs, size_t* sock_buflen )
 /* subscribe to the (configured) multicast channel
  */
 static int
-subscribe( int* sockfd, struct in_addr* mcast_inaddr )
+subscribe( int* sockfd, struct in_addr* mcast_inaddr, struct in_addr* mcast_srcinaddr )
 {
     struct sockaddr_in sa;
     const char* ipaddr = g_recopt.rec_channel;
@@ -271,7 +271,7 @@ subscribe( int* sockfd, struct in_addr* mcast_inaddr )
     rc = calc_buf_settings( NULL, &rcvbuf_len );
     if (0 != rc) return rc;
 
-    return setup_mcast_listener( &sa, mcast_inaddr,
+    return setup_mcast_listener( &sa, mcast_inaddr, mcast_srcinaddr,
             sockfd, (g_recopt.nosync_sbuf ? 0 : rcvbuf_len) );
 }
 
@@ -283,6 +283,7 @@ record()
 {
     int rsock = -1, destfd = -1, rc = 0, wtime_sec = 0;
     struct in_addr raddr;
+    struct in_addr rsrcaddr;
     struct timeval rtv;
     struct dstream_ctx ds;
     ssize_t nmsgs = 0;
@@ -314,7 +315,7 @@ record()
             break;
         }
 
-        rc = subscribe( &rsock, &raddr );
+        rc = subscribe( &rsock, &raddr, &rsrcaddr );
         if( 0 != rc ) break;
 
         rtv.tv_sec = RSOCK_TIMEOUT;
@@ -429,7 +430,7 @@ record()
     free_dstream_ctx( &ds );
     if( data ) free( data );
 
-    close_mcast_listener( rsock, &raddr );
+    close_mcast_listener( rsock, &raddr, &rsrcaddr );
     if( destfd >= 0 ) (void) close( destfd );
 
     if( quit )
@@ -446,6 +447,7 @@ static int
 verify_channel()
 {
     struct in_addr mcast_inaddr;
+    struct in_addr mcast_srcinaddr;
     int sockfd = -1, rc = -1;
     char buf[16];
     ssize_t nrd = -1;
@@ -453,7 +455,7 @@ verify_channel()
 
     static const time_t MSOCK_TMOUT_SEC = 2;
 
-    rc = subscribe( &sockfd, &mcast_inaddr );
+    rc = subscribe( &sockfd, &mcast_inaddr, &mcast_srcinaddr );
     do {
         if( rc ) break;
 
@@ -486,7 +488,7 @@ verify_channel()
     } while(0);
 
     if( sockfd >= 0 ) {
-        close_mcast_listener( sockfd, &mcast_inaddr );
+        close_mcast_listener( sockfd, &mcast_inaddr, &mcast_srcinaddr );
     }
 
     return rc;
