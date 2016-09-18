@@ -32,8 +32,11 @@ DEBUG_ON := -g
 ALL_CFLAGS = -W -Wall -Werror --pedantic $(CFLAGS)
 
 SYSTEM=$(shell uname 2>/dev/null)
-ifneq (,$(filter $(SYSTEM),FreeBSD Darwin))
+ifneq (,$(filter $(SYSTEM),FreeBSD))
 MAKE := gmake
+GZIP := /usr/bin/gzip
+endif
+ifneq (,$(filter $(SYSTEM),Darwin))
 GZIP := /usr/bin/gzip
 endif
 
