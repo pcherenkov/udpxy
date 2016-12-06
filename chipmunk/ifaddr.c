@@ -36,7 +36,6 @@
 #include "osdef.h"
 #include "ifaddr.h"
 
-
 /* check if ifr contains info on the desired ifname
  */
 static int

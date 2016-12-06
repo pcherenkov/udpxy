@@ -1,0 +1,28 @@
+# $Id
+
+%define name udpxy
+%define version %{VERSION}
+%define release el%{?rhel}
+%global __os_install_post %{nil}
+
+Name: %{name}
+Version: %{version}
+Release: %{release}
+Summary: Udpxy
+Group: Development/Tools
+License: None
+Source: https://github.com/pcherenkov/udpxy
+Packager: Pavel Cherenkov <pcherenkov@gmail.com>
+Requires: glibc >= 2.14
+Autoreq: 0
+Autoprov: 0
+
+%description
+UDP-to-HTTP multicast traffic relay daemon
+
+%files
+%defattr(-,root,root,-)
+%{_prefix}/local/bin/udpxy
+%{_mandir}/man1/udpxy.1.gz
+%{_mandir}/man1/udpxrec.1.gz
+

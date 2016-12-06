@@ -1,0 +1,10 @@
+#Object files
+*.o
+udpxy.dep
+
+#RPM build folder
+build/
+
+#Make binaries
+udpxy
+udpxrec
