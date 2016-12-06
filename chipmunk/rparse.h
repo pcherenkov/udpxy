@@ -79,10 +79,10 @@ parse_param( const char* s, size_t slen,
  *         non-zero if error
  */
 int
-parse_udprelay( const char* opt, size_t optlen,
-                char* addr, size_t addrlen,
-                uint16_t*       port );
-
+parse_udprelay( const char*  opt,
+                char* s_addr,       size_t s_addrlen,
+                char* m_addr,       size_t m_addrlen,
+                uint16_t* port );
 
 #ifdef __cplusplus
 } /* extern "C" */

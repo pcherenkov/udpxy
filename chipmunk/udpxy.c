@@ -348,7 +348,8 @@ send_http_response( int sockfd, int code, const char* reason)
  */
 static void
 check_mcast_refresh( int msockfd, time_t* last_tm,
-                     const struct in_addr* mifaddr )
+                     const struct in_addr* mifaddr,
+                     const struct in_addr* s_in_addr)
 {
     time_t now = 0;
 
@@ -359,7 +360,7 @@ check_mcast_refresh( int msockfd, time_t* last_tm,
     now = time(NULL);
 
     if( now - *last_tm >= g_uopt.mcast_refresh ) {
-        (void) renew_multicast( msockfd, mifaddr );
+        (void) renew_multicast( msockfd, mifaddr, s_in_addr);
         *last_tm = now;
     }
 
@@ -495,7 +496,7 @@ sync_dsockbuf_len( int ssockfd, int dsockfd )
  */
 static int
 relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
-               int dfilefd, const struct in_addr* mifaddr )
+               int dfilefd, const struct in_addr* mifaddr, const struct in_addr* s_in_addr)
 {
     volatile sig_atomic_t quit = 0;
 
@@ -600,7 +601,7 @@ relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
 
     while( (0 == rc) && !(quit = must_quit()) ) {
         if( g_uopt.mcast_refresh > 0 ) {
-            check_mcast_refresh( ssockfd, &rfr_tm, mifaddr );
+            check_mcast_refresh( ssockfd, &rfr_tm, mifaddr, s_in_addr);
         }
 
         nrcv = read_data( &ds, ssockfd, data, data_len, &ropt );
@@ -665,11 +666,13 @@ static int
 udp_relay( int sockfd, struct server_ctx* ctx )
 {
     char                mcast_addr[ IPADDR_STR_SIZE ];
-    struct sockaddr_in  addr;
+    char                src_addr[ IPADDR_STR_SIZE ];
+    struct sockaddr_in  s_addr;
+    struct sockaddr_in  m_addr;
 
     uint16_t    port;
     pid_t       new_pid;
-    int         rc = 0, flags; 
+    int         rc = 0, flags;
     int         msockfd = -1, sfilefd = -1,
                 dfilefd = -1, srcfd = -1;
     char        dfile_name[ MAXPATHLEN ];
@@ -683,22 +686,30 @@ udp_relay( int sockfd, struct server_ctx* ctx )
     TRACE( (void)tmfprintf( g_flog, "udp_relay : new_socket=[%d] param=[%s]\n",
                         sockfd, ctx->rq.param) );
     do {
-        rc = parse_udprelay( ctx->rq.param, sizeof(ctx->rq.param),
-                mcast_addr, IPADDR_STR_SIZE, &port );
+        rc = parse_udprelay( ctx->rq.param, src_addr, IPADDR_STR_SIZE, mcast_addr, IPADDR_STR_SIZE, &port );
         if( 0 != rc ) {
             (void) tmfprintf( g_flog, "Error [%d] parsing parameters [%s]\n",
                             rc, ctx->rq.param );
             break;
         }
 
-        if( 1 != inet_aton(mcast_addr, &addr.sin_addr) ) {
+        /* If the source IP exists, store the IP in the src_addr which is a sockaddr_in struct */
+        if( strlen(src_addr) != 0 && 1 != inet_pton(AF_INET, src_addr, &s_addr.sin_addr) ) {
+            (void) tmfprintf( g_flog, "Invalid  address: [%s]\n", src_addr );
+            rc = ERR_INTERNAL;
+            break;
+        }
+
+        if( 1 != inet_pton(AF_INET, mcast_addr, &m_addr.sin_addr) ) {
             (void) tmfprintf( g_flog, "Invalid address: [%s]\n", mcast_addr );
             rc = ERR_INTERNAL;
             break;
         }
 
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons( (short)port );
+        /*We're using IPv4 so set AF_INET for both addresses*/
+        m_addr.sin_family = AF_INET;
+        m_addr.sin_port = htons( (short)port );
+        s_addr.sin_family = AF_INET;
 
     } while(0);
 
@@ -769,20 +780,20 @@ udp_relay( int sockfd, struct server_ctx* ctx )
         else {
             rc = calc_buf_settings( NULL, &rcvbuf_len );
             if (0 == rc ) {
-                rc = setup_mcast_listener( &addr, mifaddr, &msockfd,
+                rc = setup_mcast_listener( &s_addr, &m_addr, mifaddr, &msockfd,
                     (g_uopt.nosync_sbuf ? 0 : rcvbuf_len) );
                 srcfd = msockfd;
             }
         }
         if( 0 != rc ) break;
 
-        rc = relay_traffic( srcfd, sockfd, ctx, dfilefd, mifaddr );
+        rc = relay_traffic( srcfd, sockfd, ctx, dfilefd, mifaddr, &(s_addr.sin_addr) );
         if( 0 != rc ) break;
 
     } while(0);
 
     if( msockfd > 0 ) {
-        close_mcast_listener( msockfd, mifaddr );
+        close_mcast_listener( msockfd, mifaddr, &(s_addr.sin_addr));
     }
     if( sfilefd > 0 ) {
        (void) close( sfilefd );
@@ -1343,7 +1354,7 @@ udpxy_main( int argc, char* const argv[] )
                       if( g_uopt.mcast_refresh &&
                          (g_uopt.mcast_refresh < MIN_MCAST_REFRESH ||
                           g_uopt.mcast_refresh > MAX_MCAST_REFRESH )) {
-                            (void) fprintf( stderr, 
+                            (void) fprintf( stderr,
                                 "Invalid multicast refresh period [%d] seconds, "
                                 "min=[%d] sec, max=[%d] sec\n",
                                 (int)g_uopt.mcast_refresh,

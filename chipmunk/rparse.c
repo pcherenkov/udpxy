@@ -157,12 +157,14 @@ parse_param( const char* s, size_t slen,
  *         non-zero if error
  */
 int
-parse_udprelay( const char*  opt, size_t optlen,
-                char* addr,       size_t addrlen,
+parse_udprelay( const char*  opt,
+                char* s_addr,       size_t s_addrlen,
+                char* m_addr,       size_t m_addrlen,
                 uint16_t* port )
 {
     int rc = 1;
-    size_t n;
+    size_t s_index;
+    size_t m_index;
     int pval;
 
     const char* SEP = ":%~+-^";
@@ -171,32 +173,38 @@ parse_udprelay( const char*  opt, size_t optlen,
     #define MAX_OPTLEN 512
     char s[ MAX_OPTLEN ];
 
-    assert( opt && addr && addrlen && port );
+    assert( opt && s_addr && s_addrlen && m_addr && m_addrlen && port );
 
     (void) strncpy( s, opt, MAX_OPTLEN );
     s[ MAX_OPTLEN - 1 ] = '\0';
-    do {
-        n = strcspn( s, SEP );
-        if( !n || n >= optlen ) break;
-        s[n] = '\0';
+    s_index = strcspn( s, "@" );
 
-        strncpy( addr, s, addrlen );
-        addr[ addrlen - 1 ] ='\0';
-
-        ++n;
-        pval = atoi( s + n );
-        if( (pval > 0) && (pval < MAX_PORT) ) {
-            *port = (uint16_t)pval;
-        }
-        else {
-            rc = 3;
-            break;
-        }
-
-        rc = 0;
+    /*If the n is not the original string size, then we have a match for SSM*/
+    if (s_index != strlen(s)){
+      strncpy( s_addr, s, s_index);
+      s_addr[ s_addrlen - 1 ] ='\0';
+      s[s_index] = '\0';
+      ++s_index;
     }
-    while(0);
+    else{
+      /*Reset the value of n if no SSM was found*/
+      s_index = 0;
+    }
 
+    m_index = strcspn( s + s_index, SEP );
+    strncpy( m_addr, s + s_index , m_index);
+    m_addr[ m_addrlen - 1 ] ='\0';
+    ++m_index;
+
+    pval = atoi( s + s_index + m_index );
+    if( (pval > 0) && (pval < MAX_PORT) ) {
+        *port = (uint16_t)pval;
+    }
+    else {
+        rc = 3;
+    }
+
+    rc = 0;
     return rc;
 }
 

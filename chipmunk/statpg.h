@@ -184,6 +184,8 @@ static const char REQUEST_GUIDE[] =
         "<tr><th>Request template</th><th>Function</th></tr>\n"
         "<tr><td><small>http://<i>address:port</i>/udp/<i>mcast_addr:mport/</i></small></td>\n"
         "<td>Relay multicast traffic from mcast_addr:mport</td></tr>"
+        "<tr><td><small>http://<i>address:port</i>/udp/<i>source_addr@mcast_addr:mport/</i></small></td>\n"
+        "<td>Relay SSM traffic from source_addr@mcast_addr:mport</td></tr>"
         "<tr><td><small>http://<i>address:port</i>/status/</small></td><td>Display udpxy status</td></tr>\n"
         "<tr><td><small>http://<i>address:port</i>/restart/</small></td><td>Restart udpxy</td></tr>\n"
     "</table>\n";

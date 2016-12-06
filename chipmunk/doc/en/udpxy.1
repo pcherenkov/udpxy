@@ -17,7 +17,7 @@ udpxy \- a UDP-to-HTTP multicast traffic relay daemon.
 .SH DESCRIPTION
 .PP
 udpxy is a \fIUDP-to-HTTP multicast traffic relay daemon\fP: it forwards UDP traffic
-from a given multicast subscription to the requesting HTTP client.
+from a given multicast or source-specific multicast subscription to the requesting HTTP client.
 .PP
 udpxy listens (on a dedicated address/port) for HTTP requests issued by clients.
 A client request should be structured as:
@@ -64,6 +64,8 @@ to close all active connections and restart.
 
 
 .SH EXAMPLES
+.PP
+http://192.168.0.12:5056/udp/10.170.185.82@232.22.137.57:5057
 .PP
 http://192.168.0.12:5056/udp/224.0.2.26:24012
 .PP
