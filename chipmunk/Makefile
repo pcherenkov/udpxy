@@ -23,8 +23,8 @@
 EXEC := udpxy
 UDPXREC := udpxrec
 
-STRIP := /usr/bin/strip
-GZIP  := /bin/gzip
+STRIP := strip
+GZIP  := gzip
 
 MKDEPOPT := -MM
 DEBUG_ON := -g
