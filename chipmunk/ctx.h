@@ -47,6 +47,7 @@ struct client_ctx
     pid_t       pid;
     char        mcast_addr[ IPADDR_STR_SIZE ];
     uint16_t    mcast_port;
+    char        mcast_src_addr[ IPADDR_STR_SIZE ];
     char        src_addr[ IPADDR_STR_SIZE ];
     uint16_t    src_port;
 
@@ -84,6 +85,8 @@ struct server_ctx
     char        mcast_ifc_addr[ IPADDR_STR_SIZE ];
     struct in_addr
                 mcast_inaddr;
+    struct in_addr
+                mcast_src_inaddr;
 
     struct srv_request rq;  /* (current) request to process */
 
@@ -123,7 +126,7 @@ find_client( const struct server_ctx* ctx, pid_t pid );
  */
 int
 add_client( struct server_ctx* ctx,
-            pid_t cpid, const char* maddr, uint16_t mport,
+            pid_t cpid, const char* maddr, const char* msrcaddr, uint16_t mport,
             int sockfd );
 
 

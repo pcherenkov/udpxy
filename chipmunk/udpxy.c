@@ -98,7 +98,8 @@ static const int PID_RESET = 1;
 
 /* process client requests - implemented in sloop.c */
 extern int srv_loop (const char* ipaddr, int port,
-                    const char* mcast_addr);
+                    const char* mcast_addr,
+		    const char* mcast_src_addr);
 
 /* handler for signals to perform a graceful exit
  */
@@ -348,7 +349,8 @@ send_http_response( int sockfd, int code, const char* reason)
  */
 static void
 check_mcast_refresh( int msockfd, time_t* last_tm,
-                     const struct in_addr* mifaddr )
+                     const struct in_addr* mifaddr,
+		     const struct in_addr* srcaddr )
 {
     time_t now = 0;
 
@@ -359,7 +361,7 @@ check_mcast_refresh( int msockfd, time_t* last_tm,
     now = time(NULL);
 
     if( now - *last_tm >= g_uopt.mcast_refresh ) {
-        (void) renew_multicast( msockfd, mifaddr );
+        (void) renew_multicast( msockfd, mifaddr, srcaddr );
         *last_tm = now;
     }
 
@@ -495,7 +497,8 @@ sync_dsockbuf_len( int ssockfd, int dsockfd )
  */
 static int
 relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
-               int dfilefd, const struct in_addr* mifaddr )
+               int dfilefd, const struct in_addr* mifaddr,
+	       const struct in_addr* srcaddr )
 {
     volatile sig_atomic_t quit = 0;
 
@@ -600,7 +603,7 @@ relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
 
     while( (0 == rc) && !(quit = must_quit()) ) {
         if( g_uopt.mcast_refresh > 0 ) {
-            check_mcast_refresh( ssockfd, &rfr_tm, mifaddr );
+            check_mcast_refresh( ssockfd, &rfr_tm, mifaddr, srcaddr );
         }
 
         nrcv = read_data( &ds, ssockfd, data, data_len, &ropt );
@@ -665,7 +668,9 @@ static int
 udp_relay( int sockfd, struct server_ctx* ctx )
 {
     char                mcast_addr[ IPADDR_STR_SIZE ];
+    char                mcast_src_addr[ IPADDR_STR_SIZE ];
     struct sockaddr_in  addr;
+    struct in_addr      saddr;
 
     uint16_t    port;
     pid_t       new_pid;
@@ -683,7 +688,9 @@ udp_relay( int sockfd, struct server_ctx* ctx )
                         sockfd, ctx->rq.param) );
     do {
         rc = parse_udprelay( ctx->rq.param, sizeof(ctx->rq.param),
-                mcast_addr, IPADDR_STR_SIZE, &port );
+                mcast_addr, IPADDR_STR_SIZE, 
+		mcast_src_addr, IPADDR_STR_SIZE,
+		&port );
         if( 0 != rc ) {
             (void) tmfprintf( g_flog, "Error [%d] parsing parameters [%s]\n",
                             rc, ctx->rq.param );
@@ -699,6 +706,13 @@ udp_relay( int sockfd, struct server_ctx* ctx )
         addr.sin_family = AF_INET;
         addr.sin_port = htons( (short)port );
 
+        if( 1 != inet_aton(mcast_src_addr, &saddr) ) {
+	    (void) tmfprintf( g_flog, "Invalid address: [%s]\n", mcast_src_addr );   
+	    rc = ERR_INTERNAL;
+            break;
+        }     
+
+
     } while(0);
 
     if( 0 != rc ) {
@@ -709,7 +723,7 @@ udp_relay( int sockfd, struct server_ctx* ctx )
     /* start the (new) process to relay traffic */
 
     if( 0 != (new_pid = fork()) ) {
-        rc = add_client( ctx, new_pid, mcast_addr, port, sockfd );
+        rc = add_client( ctx, new_pid, mcast_addr, mcast_src_addr, port, sockfd );
         return rc; /* parent returns */
     }
 
@@ -768,20 +782,20 @@ udp_relay( int sockfd, struct server_ctx* ctx )
         else {
             rc = calc_buf_settings( NULL, &rcvbuf_len );
             if (0 == rc ) {
-                rc = setup_mcast_listener( &addr, mifaddr, &msockfd,
+                rc = setup_mcast_listener( &addr, mifaddr, &saddr, &msockfd,
                     (g_uopt.nosync_sbuf ? 0 : rcvbuf_len) );
                 srcfd = msockfd;
             }
         }
         if( 0 != rc ) break;
 
-        rc = relay_traffic( srcfd, sockfd, ctx, dfilefd, mifaddr );
+        rc = relay_traffic( srcfd, sockfd, ctx, dfilefd, mifaddr, &saddr );
         if( 0 != rc ) break;
 
     } while(0);
 
     if( msockfd > 0 ) {
-        close_mcast_listener( msockfd, mifaddr );
+        close_mcast_listener( msockfd, mifaddr, &saddr );
     }
     if( sfilefd > 0 ) {
        (void) close( sfilefd );
@@ -1190,7 +1204,8 @@ udpxy_main( int argc, char* const argv[] )
         custom_log = 0, no_daemon = 0;
 
     char ipaddr[IPADDR_STR_SIZE] = "\0",
-         mcast_addr[IPADDR_STR_SIZE] = "\0";
+         mcast_addr[IPADDR_STR_SIZE] = "\0",
+         mcast_src_addr[IPADDR_STR_SIZE] = "\0";
 
     char pidfile[ MAXPATHLEN ] = "\0";
     u_short MIN_MCAST_REFRESH = 0, MAX_MCAST_REFRESH = 0;
@@ -1455,7 +1470,7 @@ udpxy_main( int argc, char* const argv[] )
         syslog( LOG_NOTICE, "%s is starting\n", g_app_info );
         TRACE( printcmdln( g_flog, g_app_info, argc, argv ) );
 
-        rc = srv_loop( ipaddr, port, mcast_addr );
+        rc = srv_loop( ipaddr, port, mcast_addr, mcast_src_addr );
 
         syslog( LOG_NOTICE, "%s is exiting with rc=[%d]\n",
                 g_app_info, rc);

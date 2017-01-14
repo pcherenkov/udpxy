@@ -151,8 +151,8 @@ get_src_info( struct client_ctx* cl, int sockfd )
     }
 
     if( S_ISREG( st.st_mode ) ) {
-        (void) strncpy( cl->src_addr, "File", sizeof(cl->src_addr) );
-        cl->src_addr[ sizeof(cl->src_addr) - 1 ] = '\0';
+        (void) strncpy( cl->mcast_src_addr, "File", sizeof(cl->mcast_src_addr) );
+        cl->mcast_src_addr[ sizeof(cl->mcast_src_addr) - 1 ] = '\0';
         cl->src_port = 0;
     }
     else if( S_ISSOCK( st.st_mode ) ) {
@@ -179,7 +179,7 @@ get_src_info( struct client_ctx* cl, int sockfd )
  */
 int
 add_client( struct server_ctx* ctx,
-            pid_t cpid, const char* maddr, uint16_t mport,
+            pid_t cpid, const char* maddr, const char* msrcaddr, uint16_t mport,
             int sockfd )
 {
     struct client_ctx* client = NULL;
@@ -200,6 +200,9 @@ add_client( struct server_ctx* ctx,
 
     client->mcast_port = mport;
 
+    (void) strncpy( client->mcast_src_addr, msrcaddr, IPADDR_STR_SIZE );
+    client->mcast_src_addr[ IPADDR_STR_SIZE - 1 ] = '\0';
+
     if (ctx->rq.tail[0])
         (void) strcpy( client->tail, ctx->rq.tail );
 
@@ -216,8 +219,8 @@ add_client( struct server_ctx* ctx,
 
     if( g_flog ) {
         (void)tmfprintf( g_flog, "Added client: pid=[%d], maddr=[%s], mport=[%d], "
-                "saddr=[%s], sport=[%d]\n",
-                (int)cpid, maddr, (int)mport, client->src_addr, client->src_port );
+                "msrcaddr=[%s], saddr=[%s], sport=[%d]\n",
+                (int)cpid, maddr, (int)mport, msrcaddr, client->src_addr, client->src_port );
     }
     return 0;
 }

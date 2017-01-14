@@ -158,33 +158,45 @@ parse_param( const char* s, size_t slen,
  */
 int
 parse_udprelay( const char*  opt, size_t optlen,
-                char* addr,       size_t addrlen,
+                char* maddr,       size_t maddrlen,
+		char* srcaddr,    size_t srcaddrlen,
                 uint16_t* port )
 {
     int rc = 1;
-    size_t n;
+    size_t n,i;
     int pval;
 
-    const char* SEP = ":%~+-^";
+    const char* SEP1 = "@";
+    const char* SEP2 = ":%~+-^";
     const int MAX_PORT = 65535;
 
     #define MAX_OPTLEN 512
     char s[ MAX_OPTLEN ];
 
-    assert( opt && addr && addrlen && port );
+    assert( opt && addr && addrlen && srcaddr && srcaddrlen && port );
 
     (void) strncpy( s, opt, MAX_OPTLEN );
     s[ MAX_OPTLEN - 1 ] = '\0';
     do {
-        n = strcspn( s, SEP );
-        if( !n || n >= optlen ) break;
-        s[n] = '\0';
 
-        strncpy( addr, s, addrlen );
-        addr[ addrlen - 1 ] ='\0';
+        i = strcspn( s, SEP1 );
+        if( !i || i >= optlen ) break;
+	s[i] = '\0';
+
+        strncpy( srcaddr, s, srcaddrlen );
+        srcaddr[ srcaddrlen  - 1 ] ='\0';
+
+        i++;    
+
+        n = strcspn( s + i, SEP2 );
+        if( !n || n >= optlen ) break;
+        s[i + n] = '\0';
+
+        strncpy( maddr, s + i , maddrlen );
+        maddr[ maddrlen - 1 ] ='\0';
 
         ++n;
-        pval = atoi( s + n );
+        pval = atoi( s + i + n );
         if( (pval > 0) && (pval < MAX_PORT) ) {
             *port = (uint16_t)pval;
         }
