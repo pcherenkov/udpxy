@@ -200,6 +200,14 @@ Build 23 (3-Jul-2012)
     (*) FIXED: idle timeout displayed incorrectly in select(2)-based version;
     (*) HTTP response includes 'Server:' clause;
 
+Build 24 (6-Dec-2016)
+    (*) Updating man documentation and status page to show usage for SSM calls
+    (*) Adding SSM call format to statpg.h table
+    (*) Adding -std=gnu99 to avoid issue with statpg.h documentation
+    string length being too long for C90
+    (*) Added Specfile for RPM building via Makefile
+    (*) Adding .gitignore file
+
 Patch 1 (31-Aug-2012)
     (*) Added the capability to capture the HTTP variables submitted via URI beyond command/options 
         Example: http://hostname:port/udp/mcaddr:mcport?aa=1&bb=2&cc=3 - '?aa=1&bb=2&cc=3' part is now
