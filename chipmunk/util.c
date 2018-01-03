@@ -48,7 +48,7 @@ extern const int   BUILDNUM;
 extern const char  BUILD_TYPE[];
 extern const int   PATCH;
 
-static char s_sysinfo [80] = "\0";
+static char s_sysinfo [256] = "\0";
 
 extern struct udpxy_opt g_uopt;
 
