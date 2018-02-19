@@ -22,9 +22,9 @@ from a given multicast or source-specific multicast subscription to the requesti
 udpxy listens (on a dedicated address/port) for HTTP requests issued by clients.
 A client request should be structured as:
 .PP
-http://{\fIaddress\fP}:{\fIport\fP}/{\fIcmd\fP}/{\fImgroup_address\fP}[\fBSEP\fP]{\fImgroup_port\fP}
+http://{\fIaddress\fP}:{\fIport\fP}/{\fIcmd\fP}/[\fIsrc_address\fP@]{\fImgroup_address\fP}{\fIsep\fP}{\fImgroup_port\fP}
 .TP 8
-.B [SEP]
+.B {sep}
 :|%|~|+|\-|^
 .TP 8
 .B {cmd}
