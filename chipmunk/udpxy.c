@@ -1111,7 +1111,7 @@ process_requests (tmfd_t* asock, size_t *alen, fd_set* rset, struct server_ctx* 
 
         if (0 != rc) {
             TRACE( (void)tmfprintf (g_flog, "error [%d] processing "
-                "client socket [%d]\n", rc, asock[i]));
+                "client socket [%d]\n", rc, asock[i].fd));
         }
 
         TRACE( (void)tmfprintf (g_flog, "%s: %s accepted "
