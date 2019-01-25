@@ -676,19 +676,21 @@ read_data( struct dstream_ctx* spc, int fd, char* data,
 
     for( m = 0, n = 0; ((opt->max_frgs < 0) ? 1 : (m < opt->max_frgs)); ++m ) {
         nrcv = read_packet( spc, fd, data + n, data_len - n );
-        if( nrcv <= 0 ) {
+        if( nrcv < 0 ) {
             if( EAGAIN == errno ) {
-                (void)tmfprintf( g_flog,
-                        "Receive on socket/file [%d] timed out\n",
-                        fd);
+                (void)tmfprintf( g_flog, "Receive on socket/file "
+                        "[%d] timed out\n", fd);
             }
-
-            if( 0 == nrcv ) (void)tmfprintf(g_flog, "%s - EOF\n",__func__);
             else {
                 mperror(g_flog, errno, "%s: read/recv", __func__);
             }
 
             break;
+        }
+
+        if( 0 == nrcv ) {
+            (void)tmfprintf(g_flog, "%s - ZERO-SIZE datagram, ignoring\n",__func__);
+            continue;
         }
 
         if( spc->flags & F_DROP_PACKET ) {
@@ -716,13 +718,12 @@ read_data( struct dstream_ctx* spc, int fd, char* data,
         }
     } /* for */
 
-    if( (nrcv > 0) && !n ) {
+    if( m > 0 && nrcv >= 0 && !n ) {
         TRACE( (void)tmfprintf( g_flog, "%s: no data to send "
                     "out of [%d] packets\n", __func__, m ) );
-        return -1;
     }
 
-    return (nrcv > 0) ? n : -1;
+    return nrcv >= 0 ? n : -1;
 }
 
 

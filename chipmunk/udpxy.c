@@ -599,6 +599,8 @@ relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
     pause_time = 0;
 
     while( (0 == rc) && !(quit = must_quit()) ) {
+        nrcv = nsent = 0;
+
         if( g_uopt.mcast_refresh > 0 ) {
             check_mcast_refresh( ssockfd, &rfr_tm, mifaddr );
         }
