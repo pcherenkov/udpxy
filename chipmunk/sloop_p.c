@@ -39,7 +39,8 @@ extern sig_atomic_t must_quit();
 extern void         wait_terminated  (struct server_ctx* ctx);
 extern void         tmout_requests   (tmfd_t* asock, size_t *alen);
 extern void         process_requests (tmfd_t* asock, size_t *alen,
-                                      fd_set* rset, struct server_ctx* srv);
+                                      fd_set* rset, struct server_ctx* srv,
+                                      const char* user_file);
 extern void         accept_requests  (int sockfd, tmfd_t* asock, size_t* alen);
 extern void         terminate_all_clients (struct server_ctx* ctx);
 extern void         wait_all (struct server_ctx* ctx);
@@ -55,7 +56,8 @@ struct server_ctx  g_srv;
 /* process client requests */
 int
 srv_loop( const char* ipaddr, int port,
-             const char* mcast_addr )
+          const char* mcast_addr,
+          const char* user_file )
 {
     int                 rc, maxfd, err, nrdy, i;
     struct in_addr      mcast_inaddr;
@@ -162,7 +164,7 @@ srv_loop( const char* ipaddr, int port,
 
         if ((0 < nasock) &&
                  (0 < (nrdy - (FD_ISSET(g_srv.lsockfd, &rset) ? 1 : 0)))) {
-            process_requests (asock, &nasock, &rset, &g_srv);
+            process_requests (asock, &nasock, &rset, &g_srv, user_file);
             /* n now contains # (yet) unprocessed accepted sockets */
         }
 
@@ -206,4 +208,3 @@ srv_loop( const char* ipaddr, int port,
 
 
 /* __EOF__ */
-

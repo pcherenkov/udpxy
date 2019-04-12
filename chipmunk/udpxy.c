@@ -43,6 +43,7 @@
 #include <syslog.h>
 #include <time.h>
 #include <sys/uio.h>
+#include <math.h>
 
 #include "mtrace.h"
 #include "rparse.h"
@@ -98,7 +99,8 @@ static const int PID_RESET = 1;
 
 /* process client requests - implemented in sloop.c */
 extern int srv_loop (const char* ipaddr, int port,
-                    const char* mcast_addr);
+                     const char* mcast_addr,
+                     const char* user_file );
 
 /* handler for signals to perform a graceful exit
  */
@@ -198,13 +200,115 @@ print_fds (FILE* fp, const char* msg, tmfd_t* asock, size_t len)
     return;
 }
 
+char getNBitOf(char* string, unsigned int byte, unsigned char bit) {
+  return ((string[byte]) >> (7-bit)) & 0x1;
+}
+
+char getTotalNBitOf(char* string, unsigned int bit) {
+  return getNBitOf(string, floor(bit / 8), bit % 8);
+}
+
+char* base64encode(char* decoded, char* output_buffer) {
+  char b64table[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  char* dorigin=output_buffer;
+  unsigned int decoded_length = strlen(decoded) * 8;
+  unsigned int encoded_length = ceil(decoded_length / 24.0)*24;
+  unsigned int i=0,j=0;
+  unsigned char e=0,u=0;;
+
+  while(encoded_length - i) {
+    e = (e << 1) | getTotalNBitOf(decoded, i);
+    if(i <= decoded_length) u=1;
+    if(j == 5) {
+      if(u == 0) {
+        *output_buffer = '=';
+      } else {
+        *output_buffer = b64table[e];
+      }
+      output_buffer ++;
+      e = 0;
+      u = 0;
+    }
+    i++;
+    j = ((j + 1) % 6);
+  }
+  *output_buffer=0;
+  return dorigin;
+}
+
+char** readUsersFile(const char* file_user) {
+  FILE* fp;
+  char line[2048];
+  char** outval;
+  unsigned int nelems=0;
+
+  fp = fopen(file_user, "r");
+  if(fp==NULL) return NULL;
+  while(fgets(line, 2048, fp)!=NULL) {
+    if(nelems==0) {
+      outval = (char**) malloc(sizeof(char*));
+    } else {
+      outval = (char**) realloc(outval, (nelems * sizeof(char*)));
+    }
+    for(int i=strlen(line)-2; i>=0; i--) {
+      if(!(line[i]=='\n' || line[i]=='\r')) {
+        line[i+1]='\0';
+        break;
+      }
+    }
+    outval[nelems] = malloc((strlen(line)+1)*sizeof(char)*4); //MAX UTF8 4BytesxChar
+    strcpy(outval[nelems], line);
+    outval[nelems][strlen(line)] = '\0';
+    nelems++;
+  }
+  fclose(fp);
+
+  return outval;
+}
+
+char** parseUsersFileInBase64(const char* file_user) {
+  char** file_lines;
+  char encoded_pw[2048];
+
+  file_lines = readUsersFile(file_user);
+
+  for(unsigned int i=0; i <= (sizeof(file_lines) / sizeof(char*)); i++) {
+    base64encode(file_lines[i], encoded_pw);
+    strcpy(file_lines[i], encoded_pw);
+  }
+
+  return file_lines;
+}
+
+unsigned char isAuthorizationValid(const char* config_file, char* authorization) {
+  char** file_lines;
+  unsigned char output;
+
+  output = 0;
+
+  file_lines = parseUsersFileInBase64(config_file);
+
+  for(unsigned int i=0; i <= (sizeof(file_lines) / sizeof(char*)); i++) {
+    if(strcmp(file_lines[i], authorization)==0) {
+      output = 1;
+      break;
+    }
+  }
+
+  for(unsigned int i=0; i <= (sizeof(file_lines) / sizeof(char*)); i++) {
+    free(file_lines[i]);
+  }
+  free(file_lines);
+
+  return output;
+}
 
 /* read HTTP request from sockfd, parse it into command
  * and its parameters (for instance, command='udp' and
  * parameters being '192.168.0.1:5002')
  */
 static int
-read_command( int sockfd, struct server_ctx *srv)
+read_command( int sockfd, struct server_ctx *srv, const char* user_file)
 {
 #define DBUF_SZ 2048  /* max size for raw data with HTTP request */
 #define RBUF_SZ 512   /* max size for url-derived request */
@@ -212,12 +316,41 @@ read_command( int sockfd, struct server_ctx *srv)
     ssize_t hlen;
     size_t  rlen;
     int rc = 0;
+    char *found, *authorization;
+    int auth = 0;
 
     assert( (sockfd > 0) && srv );
 
     TRACE( (void)tmfprintf( g_flog,  "Reading command from socket [%d]\n",
                             sockfd ) );
     hlen = recv( sockfd, httpbuf, sizeof(httpbuf), 0 );
+
+    if(strlen(user_file)>0) {
+      found = strtok(httpbuf, "\n");
+      while(found) {
+        authorization = strstr(found, "Authorization");
+        if(authorization) {
+          auth++;
+          authorization+=21;
+          for(int i=strlen(authorization)-2; i>=0; i--) {
+            if(!(authorization[i]=='\n' || authorization[i]=='\r')) {
+              authorization[i+1]=0;
+              break;
+            }
+          }
+          if(isAuthorizationValid(user_file, authorization)==1) {
+            // AUTHORIZED
+            auth++;
+          } else {
+            //NOT AUTHORIZED
+            return -1;
+          }
+        }
+        found = strtok(NULL, "\n");
+      }
+      if(auth<2) return -1;
+    }
+
     if( 0>hlen ) {
         rc = errno;
         if( !no_fault(rc) )
@@ -669,7 +802,7 @@ udp_relay( int sockfd, struct server_ctx* ctx )
 
     uint16_t    port;
     pid_t       new_pid;
-    int         rc = 0, flags; 
+    int         rc = 0, flags;
     int         msockfd = -1, sfilefd = -1,
                 dfilefd = -1, srcfd = -1;
     char        dfile_name[ MAXPATHLEN ];
@@ -1072,7 +1205,7 @@ tmout_requests (tmfd_t* asock, size_t *alen)
 }
 
 void
-process_requests (tmfd_t* asock, size_t *alen, fd_set* rset, struct server_ctx* srv)
+process_requests (tmfd_t* asock, size_t *alen, fd_set* rset, struct server_ctx* srv, const char* user_file)
 {
     size_t nmax = *alen, i = 0, nserved = 0;
     int rc = 0, served = 0;
@@ -1102,7 +1235,7 @@ process_requests (tmfd_t* asock, size_t *alen, fd_set* rset, struct server_ctx* 
                 "[%d] (%d/%d)\n", asock[i].fd, i+1, nmax) );
 
             ++served;  /* selected - must close regardless */
-            rc = read_command(asock[i].fd, srv);
+            rc = read_command(asock[i].fd, srv, user_file);
             if( 0 != rc ) break;
 
             rc = process_command(asock[i].fd, srv);
@@ -1155,6 +1288,8 @@ usage( const char* app, FILE* fp )
             "\t-p : port to listen on\n"
             "\t-m : (IPv4) address/interface of (multicast) "
                     "source [default = %s]\n"
+            "\t-f : enables basic HTTP authentication and specify the "
+                    "file where the users are configured [default = none]\n"
             "\t-c : max clients to serve [default = %d, max = %d]\n",
             IPv4_ALL, IPv4_ALL, DEFAULT_CLIENT_COUNT, MAX_CLIENT_COUNT);
     (void)fprintf(fp,
@@ -1190,7 +1325,8 @@ udpxy_main( int argc, char* const argv[] )
         custom_log = 0, no_daemon = 0;
 
     char ipaddr[IPADDR_STR_SIZE] = "\0",
-         mcast_addr[IPADDR_STR_SIZE] = "\0";
+         mcast_addr[IPADDR_STR_SIZE] = "\0",
+         user_file[255] = "\0";
 
     char pidfile[ MAXPATHLEN ] = "\0";
     u_short MIN_MCAST_REFRESH = 0, MAX_MCAST_REFRESH = 0;
@@ -1199,9 +1335,9 @@ udpxy_main( int argc, char* const argv[] )
  * those features are experimental and for dev debugging ONLY
  * */
 #ifdef UDPXY_FILEIO
-    static const char UDPXY_OPTMASK[] = "TvSa:l:p:m:c:B:n:R:r:w:H:M:";
+    static const char UDPXY_OPTMASK[] = "TvSa:l:p:m:f:c:B:n:R:r:w:H:M:";
 #else
-    static const char UDPXY_OPTMASK[] = "TvSa:l:p:m:c:B:n:R:H:M:";
+    static const char UDPXY_OPTMASK[] = "TvSa:l:p:m:f:c:B:n:R:H:M:";
 #endif
 
     struct sigaction qact, iact, cact, oldact;
@@ -1246,6 +1382,9 @@ udpxy_main( int argc, char* const argv[] )
                       }
                       break;
 
+            case 'f':
+                      strcpy(user_file, optarg);
+                      break;
             case 'c':
                       g_uopt.max_clients = atoi( optarg );
                       if( (g_uopt.max_clients < MIN_CLIENT_COUNT) ||
@@ -1342,7 +1481,7 @@ udpxy_main( int argc, char* const argv[] )
                       if( g_uopt.mcast_refresh &&
                          (g_uopt.mcast_refresh < MIN_MCAST_REFRESH ||
                           g_uopt.mcast_refresh > MAX_MCAST_REFRESH )) {
-                            (void) fprintf( stderr, 
+                            (void) fprintf( stderr,
                                 "Invalid multicast refresh period [%d] seconds, "
                                 "min=[%d] sec, max=[%d] sec\n",
                                 (int)g_uopt.mcast_refresh,
@@ -1455,7 +1594,7 @@ udpxy_main( int argc, char* const argv[] )
         syslog( LOG_NOTICE, "%s is starting\n", g_app_info );
         TRACE( printcmdln( g_flog, g_app_info, argc, argv ) );
 
-        rc = srv_loop( ipaddr, port, mcast_addr );
+        rc = srv_loop( ipaddr, port, mcast_addr, user_file );
 
         syslog( LOG_NOTICE, "%s is exiting with rc=[%d]\n",
                 g_app_info, rc);
@@ -1481,4 +1620,3 @@ udpxy_main( int argc, char* const argv[] )
 }
 
 /* __EOF__ */
-

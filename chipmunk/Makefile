@@ -29,6 +29,9 @@ GZIP  := /bin/gzip
 MKDEPOPT := -MM
 DEBUG_ON := -g
 
+CC = gcc
+ACFLAGS = -lm
+
 ALL_CFLAGS = -W -Wall -Werror --pedantic $(CFLAGS)
 
 SYSTEM=$(shell uname 2>/dev/null)
@@ -148,7 +151,7 @@ $(DEPFILE): $(SRC)
 
 $(EXEC) : $(DEPFILE) $(OBJ)
 	@rm -f $(EXEC)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(COPT) -o $(EXEC) $(OBJ)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(COPT) -o $(EXEC) $(OBJ) $(ACFLAGS)
 	@ls -l $(EXEC)
 ifneq (yes, $(NO_UDPXREC))
 	@rm -f $(UDPXREC)
