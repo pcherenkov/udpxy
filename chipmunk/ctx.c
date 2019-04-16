@@ -390,7 +390,7 @@ tpstat_read( struct server_ctx* ctx )
     client->tstat = ts;
 
     TRACE( (void)tmfprintf( g_flog, "Updated context for pid=[%d]; "
-                "[%.1f] Kb/sec\n", client->pid, (ts.nbytes / 1024) / ts.nsec  ) );
+                "[%.1f] KB/sec\n", client->pid, (ts.nbytes / 1024) / ts.nsec  ) );
     return 0;
 }
 

@@ -47,7 +47,7 @@ tpstat_str( const struct tput_stat* ts, char* str, size_t len )
     assert( ts && str && len );
 
     if( (0 != ts->sender_id) && (ts->nsec > 0.0) ) {
-        (void) snprintf( str, len, "%.2f Kb/sec",
+        (void) snprintf( str, len, "%.2f KB/sec",
                 (ts->nbytes / 1024.0) / ts->nsec  );
     }
     else {
