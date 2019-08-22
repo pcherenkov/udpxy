@@ -674,10 +674,11 @@ udp_relay( int sockfd, struct server_ctx* ctx )
                 dfilefd = -1, srcfd = -1;
     char        dfile_name[ MAXPATHLEN ];
     size_t      rcvbuf_len = 0;
-
-    const struct in_addr *mifaddr = &(ctx->mcast_inaddr);
+    const struct in_addr *mifaddr;
 
     assert( (sockfd > 0) && ctx );
+    mifaddr = &(ctx->mcast_inaddr);
+
 
     TRACE( (void)tmfprintf( g_flog, "udp_relay : new_socket=[%d] param=[%s]\n",
                         sockfd, ctx->rq.param) );
@@ -1110,7 +1111,7 @@ process_requests (tmfd_t* asock, size_t *alen, fd_set* rset, struct server_ctx* 
 
         if (0 != rc) {
             TRACE( (void)tmfprintf (g_flog, "error [%d] processing "
-                "client socket [%d]\n", rc, asock[i]));
+                "client socket [%d]\n", rc, asock[i].fd));
         }
 
         TRACE( (void)tmfprintf (g_flog, "%s: %s accepted "
