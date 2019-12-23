@@ -1166,7 +1166,8 @@ usage( const char* app, FILE* fp )
             "\t-H : maximum time (sec) to hold data in buffer "
                     "(-1 = unlimited) [default = %d]\n"
             "\t-n : nice value increment [default = %d]\n"
-            "\t-M : periodically renew multicast subscription (skip if 0 sec) [default = %d sec]\n",
+            "\t-M : periodically renew multicast subscription (skip if 0 sec) [default = %d sec]\n"
+            "\t-u : custom URI prefix for a simple access control [default = none]\n",
             (long)DEFAULT_CACHE_LEN, g_uopt.rbuf_msgs, DHOLD_TIMEOUT, g_uopt.nice_incr,
             (int)g_uopt.mcast_refresh );
     (void) fprintf( fp, "Examples:\n"
@@ -1200,9 +1201,9 @@ udpxy_main( int argc, char* const argv[] )
  * those features are experimental and for dev debugging ONLY
  * */
 #ifdef UDPXY_FILEIO
-    static const char UDPXY_OPTMASK[] = "TvSa:l:p:m:c:B:n:R:r:w:H:M:";
+    static const char UDPXY_OPTMASK[] = "TvSa:l:p:m:c:B:n:R:r:w:H:M:u:";
 #else
-    static const char UDPXY_OPTMASK[] = "TvSa:l:p:m:c:B:n:R:H:M:";
+    static const char UDPXY_OPTMASK[] = "TvSa:l:p:m:c:B:n:R:H:M:u:";
 #endif
 
     struct sigaction qact, iact, cact, oldact;
@@ -1351,6 +1352,16 @@ udpxy_main( int argc, char* const argv[] )
                             rc = ERR_PARAM;
                             break;
                        }
+                      break;
+            case 'u':
+                      g_uopt.uri_prefix_len = snprintf(
+                          g_uopt.uri_prefix, sizeof(g_uopt.uri_prefix), "%s/", optarg);
+                      if( g_uopt.uri_prefix_len >= sizeof(g_uopt.uri_prefix) ) {
+                          (void) fprintf( stderr,
+                              "Too long URI prefix, the limit is %zu chars\n",
+                              sizeof(g_uopt.uri_prefix) - 2 );
+                          rc = ERR_PARAM;
+                      }
                       break;
 
             case ':':

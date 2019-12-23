@@ -101,10 +101,14 @@ init_uopt( struct udpxy_opt* uo )
         rc = -1; /* modify rc only if there is an error */
     }
 
+    uo->tcp_nodelay = (flag_t)get_flagval( "UDPXY_TCP_NODELAY", 1);
+
     get_content_type(uo->cnt_type, sizeof(uo->cnt_type));
     assert( uo->cnt_type[0] );
 
-    uo->tcp_nodelay = (flag_t)get_flagval( "UDPXY_TCP_NODELAY", 1);
+    (void) memset(uo->uri_prefix, 0, sizeof(uo->uri_prefix));
+    uo->uri_prefix_len = 0;
+
     return rc;
 }
 

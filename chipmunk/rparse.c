@@ -32,6 +32,9 @@
 
 #include "rparse.h"
 #include "mtrace.h"
+#include "uopt.h"
+
+extern struct udpxy_opt g_uopt;
 
 /* parse and copy parameters of HTTP GET request into
  * request buffer
@@ -59,12 +62,19 @@ get_request( const char* src, size_t srclen,
     if( NULL == p ) return 1;   /* no header */
 
     p += (sizeof(HEAD) - 1);
+
+    if( g_uopt.uri_prefix_len ) {
+        if( strncmp(p, g_uopt.uri_prefix, g_uopt.uri_prefix_len) != 0 )
+            return 2;           /* invalid URI prefix */
+        p += g_uopt.uri_prefix_len;
+    }
+
     if( p >= EOD)               /* no request */
-        return 2;
+        return 3;
 
     n = strcspn( p, " " );
     if( (SPACE[0] != p[n]) || ((p + n) > EOD) || (n >= *rqlen) ) /* overflow */
-        return 3;
+        return 4;
 
     (void) strncpy( request, p, n );
     request[ n ] = '\0';

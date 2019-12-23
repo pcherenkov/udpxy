@@ -182,10 +182,10 @@ static const char REQUEST_GUIDE[] =
     "<h3>Available HTTP requests:</h3>\n"
     "<table cellspacing=\"0\">\n"
         "<tr><th>Request template</th><th>Function</th></tr>\n"
-        "<tr><td><small>http://<i>address:port</i>/udp/<i>mcast_addr:mport/</i></small></td>\n"
+        "<tr><td><small>http://<i>address:port</i>/<i>uri_prefix</i>/udp/<i>mcast_addr:mport/</i></small></td>\n"
         "<td>Relay multicast traffic from mcast_addr:mport</td></tr>"
-        "<tr><td><small>http://<i>address:port</i>/status/</small></td><td>Display udpxy status</td></tr>\n"
-        "<tr><td><small>http://<i>address:port</i>/restart/</small></td><td>Restart udpxy</td></tr>\n"
+        "<tr><td><small>http://<i>address:port</i>/<i>uri_prefix</i>/status/</small></td><td>Display udpxy status</td></tr>\n"
+        "<tr><td><small>http://<i>address:port</i>/<i>uri_prefix</i>/restart/</small></td><td>Restart udpxy</td></tr>\n"
     "</table>\n";
 
 
