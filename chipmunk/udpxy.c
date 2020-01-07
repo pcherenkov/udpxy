@@ -949,6 +949,16 @@ accept_requests (int sockfd, tmfd_t* asock, size_t* alen)
             break;
         }
 
+        if (g_uopt.faddr.s_addr && cliaddr.sin_addr.s_addr != g_uopt.faddr.s_addr) {
+            const char *caddr_s = inet_ntoa(cliaddr.sin_addr),
+                        *faddr_s = inet_ntoa(g_uopt.faddr);
+            tmfprintf(g_flog, "Refusing connection from %s, "
+                        "only %s allowed\n", caddr_s, faddr_s);
+
+            (void) close (new_sockfd);
+            continue;
+        }
+
         if (0 != set_nblock (new_sockfd, 1)) {
             (void) close (new_sockfd); /* TODO: error-aware close */
             continue;
@@ -1166,6 +1176,7 @@ usage( const char* app, FILE* fp )
             "\t-H : maximum time (sec) to hold data in buffer "
                     "(-1 = unlimited) [default = %d]\n"
             "\t-n : nice value increment [default = %d]\n"
+            "\t-F : allow requests ONLY from this IPv4 address [all]\n"
             "\t-M : periodically renew multicast subscription (skip if 0 sec) [default = %d sec]\n",
             (long)DEFAULT_CACHE_LEN, g_uopt.rbuf_msgs, DHOLD_TIMEOUT, g_uopt.nice_incr,
             (int)g_uopt.mcast_refresh );
@@ -1200,9 +1211,9 @@ udpxy_main( int argc, char* const argv[] )
  * those features are experimental and for dev debugging ONLY
  * */
 #ifdef UDPXY_FILEIO
-    static const char UDPXY_OPTMASK[] = "TvSa:l:p:m:c:B:n:R:r:w:H:M:";
+    static const char UDPXY_OPTMASK[] = "TvSa:l:p:m:c:B:n:R:r:w:H:M:F:";
 #else
-    static const char UDPXY_OPTMASK[] = "TvSa:l:p:m:c:B:n:R:H:M:";
+    static const char UDPXY_OPTMASK[] = "TvSa:l:p:m:c:B:n:R:H:M:F:";
 #endif
 
     struct sigaction qact, iact, cact, oldact;
@@ -1352,6 +1363,13 @@ udpxy_main( int argc, char* const argv[] )
                             break;
                        }
                       break;
+
+            case 'F':
+                    if (1 != inet_aton(optarg, &g_uopt.faddr)) {
+                        fprintf(stderr, "Invalid filter address: %s\n", optarg);
+                        rc = ERR_PARAM;
+                    }
+                    break;
 
             case ':':
                       (void) fprintf( stderr,

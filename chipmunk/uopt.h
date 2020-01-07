@@ -26,6 +26,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <arpa/inet.h>
+
 #include "udpxy.h"
 
 static const int MIN_CLIENT_COUNT       = 1;
@@ -71,6 +73,8 @@ struct udpxy_opt {
     flag_t  tcp_nodelay;     /* apply TCP_NODELAY option to
                                 newly-accepted sockets                  */
     char    cnt_type[80];   /* custom HTTP 200 content type             */
+
+    struct in_addr faddr;   /* allow only connections from this IPv4 */
 };
 
 
