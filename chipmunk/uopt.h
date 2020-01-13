@@ -92,6 +92,7 @@ struct udpxrec_opt {
     char    mcast_addr[ IPADDR_STR_SIZE ];
     char    rec_channel[ IPADDR_STR_SIZE ];
     int     rec_port;
+    char    ssm_addr[ IPADDR_STR_SIZE ];
     int     waitupd_sec;    /* update every N seconds while waiting 
                                to start recording */
 
