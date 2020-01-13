@@ -686,7 +686,7 @@ udp_relay( int sockfd, struct server_ctx* ctx )
     TRACE( (void)tmfprintf( g_flog, "udp_relay : new_socket=[%d] param=[%s]\n",
                         sockfd, ctx->rq.param) );
     do {
-        rc = parse_udprelay( ctx->rq.param, src_addr, IPADDR_STR_SIZE, mcast_addr, IPADDR_STR_SIZE, &port );
+        rc = parse_udprelay( ctx->rq.param, sizeof(ctx->rq.param), src_addr, IPADDR_STR_SIZE, mcast_addr, IPADDR_STR_SIZE, &port );
         if( 0 != rc ) {
             (void) tmfprintf( g_flog, "Error [%d] parsing parameters [%s]\n",
                             rc, ctx->rq.param );
