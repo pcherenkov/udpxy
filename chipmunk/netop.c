@@ -139,6 +139,7 @@ set_multicast( int msockfd, const struct in_addr* mifaddr, const struct in_addr*
     struct ip_mreq group_req;
 
     int rc = 0;
+    assert( ( strcmp("ADD", opname) == 0 ) ||  ( strcmp("DROP", opname) == 0 ) );
     int mreq_operation = 0;
 
     a_socklen_t len = sizeof(addr);
@@ -155,7 +156,7 @@ set_multicast( int msockfd, const struct in_addr* mifaddr, const struct in_addr*
 
     /*Check for SSM*/
     if (s_in_addr->s_addr != 0) {
-      mreq_operation = ( ( strcmp("ADD", opname) == 0 ) ? IP_ADD_SOURCE_MEMBERSHIP : ( ( strcmp("DROP", opname) == 0 ) ? IP_DROP_SOURCE_MEMBERSHIP : 69) );
+      mreq_operation = ( ( strcmp("ADD", opname) == 0 ) ? IP_ADD_SOURCE_MEMBERSHIP : IP_DROP_SOURCE_MEMBERSHIP );
 
       /*Fill out the ip_mreq_source struct with the necessary info*/
       (void) memcpy( &group_source_req.imr_multiaddr, &addr.sin_addr, sizeof(struct in_addr) );
@@ -164,7 +165,7 @@ set_multicast( int msockfd, const struct in_addr* mifaddr, const struct in_addr*
       rc = setsockopt( msockfd, IPPROTO_IP, mreq_operation, &group_source_req, sizeof(group_source_req) );
     }
     else{
-      mreq_operation = ( ( strcmp("ADD", opname) == 0 ) ? IP_ADD_MEMBERSHIP : ( ( strcmp("DROP", opname) == 0 ) ? IP_DROP_MEMBERSHIP : 69) );
+      mreq_operation = ( ( strcmp("ADD", opname) == 0 ) ? IP_ADD_MEMBERSHIP : IP_DROP_MEMBERSHIP );
 
       (void) memcpy( &group_req.imr_multiaddr, &addr.sin_addr, sizeof(struct in_addr) );
       (void) memcpy( &group_req.imr_interface, mifaddr, sizeof(struct in_addr) );
@@ -174,7 +175,7 @@ set_multicast( int msockfd, const struct in_addr* mifaddr, const struct in_addr*
     if( 0 != rc ) {
         mperror( g_flog, errno, "%s: setsockopt MCAST option: %s",
                     __func__, opname );
-        return rc;
+        return -1;
     }
 
     TRACE( (void)tmfprintf( g_flog, "multicast-group [%s]\n",
