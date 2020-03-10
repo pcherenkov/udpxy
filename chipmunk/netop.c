@@ -214,6 +214,7 @@ setup_mcast_listener( struct sockaddr_in*   sa,
                                             "for mcast socket [%d]\n", sockfd ) );
         }
 
+        ON = 1;
         rc = setsockopt( sockfd, SOL_SOCKET, SO_REUSEADDR,
                          &ON, sizeof(ON) );
         if( 0 != rc ) {
@@ -226,6 +227,7 @@ setup_mcast_listener( struct sockaddr_in*   sa,
         /*  On some systems (such as FreeBSD) SO_REUSEADDR
             just isn't enough to subscribe to N same channels for different clients.
         */
+        ON = 1;
         rc = setsockopt( sockfd, SOL_SOCKET, SO_REUSEPORT,
                          &ON, sizeof(ON) );
         if( 0 != rc ) {
