@@ -67,6 +67,24 @@ static volatile sig_atomic_t g_alarm = 0;
 struct udpxrec_opt g_recopt;
 static char g_app_info[ 80 ] = {0};
 
+static void check_mcast_refresh( int msockfd, time_t* last_tm,
+                     const struct in_addr* mifaddr,
+                     const struct in_addr* s_in_addr)
+{
+    time_t now = 0;
+
+    assert( (msockfd > 0) && last_tm && mifaddr );
+    now = time(NULL);
+
+    if( now - *last_tm >= g_recopt.mcast_refresh ) {
+        (void) renew_multicast( msockfd, mifaddr, s_in_addr);
+        *last_tm = now;
+    }
+
+    return;
+}
+
+
 /* handler for signals requestin application exit
  */
 static void
@@ -121,13 +139,25 @@ usage( const char* app, FILE* fp )
             "\t-u : seconds to wait before updating on how long till recording starts\n",
             g_recopt.nice_incr );
 
+    (void)fprintf(fp,
+            "\t-i : periodically renew multicast subscription (skip if 0 sec) [default = %d sec]\n",
+            (int)g_recopt.mcast_refresh );
+
     (void) fprintf( fp, "Examples:\n"
-            "  %s -b 15:45.00 -e +2:00.00 -M 1.5Gb -n 2 -B 64K -c 224.0.11.31:5050 "
+            "1.  %s -b 15:45.00 -e +2:00.00 -M 1.5Gb -n 2 -B 64K -c 224.0.11.31:5050 "
             " /opt/video/tv5.mpg \n"
             "\tbegin recording multicast channel 224.0.11.31:5050 at 15:45 today,\n"
             "\tfinish recording in two hours or if destination file size >= 1.5 Gb;\n"
             "\tset socket buffer to 64Kb; increment nice value by 2;\n"
             "\twrite captured video to /opt/video/tv5.mpg\n",
+            g_udpxrec_app );
+    (void) fprintf( fp, "\n"
+            "2.  %s -v -e 14:55.00 -p /var/run/udpxrec.pid -l /videos/test.txt -B 64K -m eth0 -s 87.141.215.251 -c 232.0.10.120:10000 /videos/test2.mpg \n"
+            "\tbegin recording now until 14:55.00 time multicast channel 232.0.10.120:10000 from server 87.141.215.251,\n"
+            "\tinterface eth0 is in subnet where multicast group resides (layer 2)\n"
+            "\tcreate pid file with process id /var/run/udpxrec.pid\n"
+            "\tcreate logfile /videos/test.txt\n"
+            "\twrite captured video to /videos/test2.mpg\n",
             g_udpxrec_app );
     (void) fprintf( fp, "\n  %s\n", UDPXY_COPYRIGHT_NOTICE );
     (void) fprintf( fp, "  %s\n\n", UDPXY_CONTACT );
@@ -303,6 +333,7 @@ record()
     sig_atomic_t quit = 0;
     struct rdata_opt ropt;
     int oflags = 0;
+    time_t rfr_tm = time(NULL);
 
     char* data = NULL;
 
@@ -390,6 +421,9 @@ record()
     ropt.buf_tmout = -1;
 
     for( n_total = 0; (0 == rc) && !(quit = must_quit()); ) {
+	if( g_recopt.mcast_refresh > 0 ) {
+            check_mcast_refresh( rsock, &rfr_tm, &raddr, &(saddr.sin_addr));
+        }
         nrcv = read_data( &ds, rsock, data, g_recopt.bufsize, &ropt );
         if( -1 == nrcv ) { rc = ERR_INTERNAL; break; }
 
@@ -537,9 +571,10 @@ extern int udpxrec_main( int argc, char* const argv[] );
 int udpxrec_main( int argc, char* const argv[] )
 {
     int rc = 0, ch = 0, custom_log = 0, no_daemon = 0;
-    static const char OPTMASK[] = "vb:e:M:p:B:n:m:l:c:s:R:u:T";
+    static const char OPTMASK[] = "vb:e:M:p:B:n:m:l:c:s:i:R:u:T";
     time_t now = time(NULL);
     char now_buf[ 32 ] = {0}, sel_buf[ 32 ] = {0}, app_finfo[80] = {0};
+    u_short MIN_MCAST_REFRESH = 0, MAX_MCAST_REFRESH = 0;
 
     extern int optind, optopt;
     extern const char IPv4_ALL[];
@@ -687,6 +722,25 @@ int udpxrec_main( int argc, char* const argv[] )
                           rc = ERR_PARAM;
                       }
                       break;
+
+            case 'i':
+                      g_recopt.mcast_refresh = (u_short)atoi( optarg );
+
+                      MIN_MCAST_REFRESH = 30;
+                      MAX_MCAST_REFRESH = 64000;
+                      if( g_recopt.mcast_refresh &&
+                         (g_recopt.mcast_refresh < MIN_MCAST_REFRESH ||
+                          g_recopt.mcast_refresh > MAX_MCAST_REFRESH )) {
+                            (void) fprintf( stderr,
+                                "Invalid multicast refresh period [%d] seconds, "
+                                "min=[%d] sec, max=[%d] sec\n",
+                                (int)g_recopt.mcast_refresh,
+                                (int)MIN_MCAST_REFRESH, (int)MAX_MCAST_REFRESH );
+                            rc = ERR_PARAM;
+                            break;
+                       }
+                      break;
+
             case 'R':
                       g_recopt.rbuf_msgs = atoi( optarg );
                       if( (g_recopt.rbuf_msgs <= 0) && (-1 != g_recopt.rbuf_msgs) ) {
