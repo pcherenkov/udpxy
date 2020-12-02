@@ -52,6 +52,17 @@ static char s_sysinfo [1024] = "\0";
 
 extern struct udpxy_opt g_uopt;
 
+/* NB: use LLONG_MAX and LLONG_MIN recommended when
+ * compiling with C99 compliance;
+ *
+ * we still (yet) complie under C89, so LLONGMAX64,
+ * LLONGMIN64 are introduced instead to avoid C99-related
+ * warnings
+ */
+
+# define LLONGMAX64    9223372036854775807.0
+# define LLONGMIN64    (-LLONGMAX64 - 1.0)
+
 /* write buffer to a file
  *
  */
@@ -845,39 +856,8 @@ a2double( const char* str, double* pval )
 
 
 int
-a2size( const char* str, ssize_t* pval )
-{
-    double dval = 0.0;
-    int rc = 0;
-    static const int ERR_OVFLW = -2;
-
-    if( 0 != (rc = a2double( str, &dval )) )
-        return rc;
-
-    if( dval > LONG_MAX || dval < LONG_MIN )
-        return ERR_OVFLW;
-
-    if( NULL != pval ) {
-        *pval = (ssize_t)dval;
-    }
-
-    return rc;
-}
-
-int
 a2int64( const char* str, int64_t* pval )
 {
-/* NB: use LLONG_MAX and LLONG_MIN recommended when
- * compiling with C99 compliance;
- *
- * we still (yet) complie under C89, so LLONGMAX64,
- * LLONGMIN64 are introduced instead to avoid C99-related
- * warnings
- */
-
-# define LLONGMAX64    9223372036854775807.0
-# define LLONGMIN64    (-LLONGMAX64 - 1.0)
-
     double dval = 0.0;
     int rc = 0;
     static const int ERR_OVFLW = -2;
@@ -894,6 +874,21 @@ a2int64( const char* str, int64_t* pval )
 
     return rc;
 }
+
+
+int
+a2size( const char* str, ssize_t* pval )
+{
+    int64_t n64 = 0;
+    int rc = a2int64(str, &n64);
+
+    if (pval && 0 == rc) {
+        *pval = (ssize_t)n64;
+    }
+
+    return rc;
+}
+
 
 /* returns asctime w/o CR character at the end
  */
