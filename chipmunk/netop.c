@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 #include "udpxy.h"
 #include "netop.h"
@@ -80,12 +81,14 @@ setup_listener( const char* ipaddr, int port, int* sockfd, int bklog )
             servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
         }
 
-        rc = setsockopt( lsock, SOL_SOCKET, SO_REUSEADDR,
-                         &ON, sizeof(ON) );
-        if( 0 != rc ) {
-            mperror(g_flog, errno, "%s: setsockopt SO_REUSEADDR",
-                    __func__);
-            break;
+        if (NULL == getenv("UDPXY_SKIP_REUSEADDR")) {
+            rc = setsockopt( lsock, SOL_SOCKET, SO_REUSEADDR,
+                            &ON, sizeof(ON) );
+            if( 0 != rc ) {
+                mperror(g_flog, errno, "%s: setsockopt SO_REUSEADDR",
+                        __func__);
+                break;
+            }
         }
 
         #define NONBLOCK 1
@@ -234,16 +237,18 @@ setup_mcast_listener( struct sockaddr_in*   s_address,
         }
 
 #ifdef SO_REUSEPORT
-        /*  On some systems (such as FreeBSD) SO_REUSEADDR
-            just isn't enough to subscribe to N same channels for different clients.
-        */
-        rc = setsockopt( sockfd, SOL_SOCKET, SO_REUSEPORT,
-                         &ON, sizeof(ON) );
-        if( 0 != rc ) {
-            mperror(g_flog, errno, "%s: setsockopt SO_REUSEPORT",
-                    __func__);
-            break;
-        }
+        if (NULL == getenv("UDPXY_SKIP_REUSEPORT")) {
+            /*  On some systems (such as FreeBSD) SO_REUSEADDR
+                just isn't enough to subscribe to N same channels for different clients.
+            */
+            rc = setsockopt( sockfd, SOL_SOCKET, SO_REUSEPORT,
+                            &ON, sizeof(ON) );
+            if( 0 != rc ) {
+                mperror(g_flog, errno, "%s: setsockopt SO_REUSEPORT",
+                        __func__);
+                break;
+            }
+        } /* UDPXY_SKIP_REUSEPORT */
 #endif /* SO_REUSEPORT */
 
         rc = bind( sockfd, (struct sockaddr*)m_address, sizeof(*m_address) );
