@@ -283,6 +283,7 @@ subscribe( int* sockfd, struct in_addr* mcast_inaddr, struct sockaddr_in* s_addr
 
     assert( sockfd && mcast_inaddr && s_address );
 
+    memset( s_address, 0, sizeof(struct sockaddr_in) );
     if (strlen(source_ipaddr) != 0 && 1 != inet_aton( source_ipaddr, &s_address->sin_addr)) {
         mperror( g_flog, errno,
                 "%s: Invalid source address (SSM) [%s]: inet_aton",
