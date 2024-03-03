@@ -693,7 +693,7 @@ udp_relay( int sockfd, struct server_ctx* ctx )
             break;
         }
 
-	memset( &src_addr, 0, sizeof(src_addr) );
+	memset( &s_addr, 0, sizeof(s_addr) );
         /* If the source IP exists, store the IP in the src_addr which is a sockaddr_in struct */
         if( strlen(src_addr) != 0 && 1 != inet_pton(AF_INET, src_addr, &s_addr.sin_addr) ) {
             (void) tmfprintf( g_flog, "Invalid  address: [%s]\n", src_addr );
