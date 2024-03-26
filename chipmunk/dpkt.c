@@ -743,7 +743,7 @@ write_data( const struct dstream_ctx* spc,
     if( spc->flags & F_SCATTERED ) {
         n_count = spc->pkt_count;
         n = writev( fd, spc->pkt, n_count );
-        if( n <= 0 ) {
+        if( n < 0 ) {
             if( EAGAIN == errno ) {
                 (void)tmfprintf( g_flog, "Write on fd=[%d] timed out\n", fd);
                 error = IO_BLK;
@@ -758,7 +758,7 @@ write_data( const struct dstream_ctx* spc,
             error = n;
     }
 
-    return (n > 0) ? n : error;
+    return (n >= 0) ? n : error;
 }
 
 
