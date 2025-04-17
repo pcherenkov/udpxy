@@ -151,6 +151,7 @@ init_recopt( struct udpxrec_opt* ro )
     ro->pidfile         = NULL;
     ro->rec_channel[0]  = '\0';
     ro->rec_port = 0;
+    ro->ssm_addr[0]     = '\0';
     ro->waitupd_sec = -1;
 
     ro->nosync_sbuf  =
