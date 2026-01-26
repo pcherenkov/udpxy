@@ -50,7 +50,7 @@ get_request( const char* src, size_t srclen,
              char* request, size_t* rqlen )
 {
     const char HEAD[] = "GET /";
-    char* p = NULL;
+    const char* p = NULL;
     const char* EOD = src + srclen - 1;
     size_t n = 0;
     const char SPACE[] = " ";
