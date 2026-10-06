@@ -177,6 +177,7 @@ parse_udprelay( const char*  opt, size_t optlen,
 
     (void) strncpy( s, opt, MAX_OPTLEN );
     s[ MAX_OPTLEN - 1 ] = '\0';
+    s_addr[0] = '\0';
 
     do {
         size_t s_index = strcspn( s, "@" );
@@ -187,8 +188,8 @@ parse_udprelay( const char*  opt, size_t optlen,
             if (s_index >= s_addrlen)
                 return -EINVAL;
 
-            strncpy( s_addr, s, s_index);
-            s_addr[ s_addrlen - 1 ] ='\0';
+            memcpy( s_addr, s, s_index );
+            s_addr[ s_index ] = '\0';
             s += s_index + 1;
             optlen -= s_index + 1;
         }
