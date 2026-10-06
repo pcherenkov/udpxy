@@ -22,9 +22,28 @@
 #define NETOP_UDPXY_0313082217_
 
 #include <sys/types.h>
+#include <netinet/in.h>
 
-struct in_addr;
 struct sockaddr_in;
+
+/* Resolve once per receiving socket. An index selects an interface even
+ * when its IPv4 address changes; index zero keeps the address-based API.
+ */
+struct mcast_iface {
+    struct in_addr addr;
+    unsigned int index;
+};
+
+/* Older headers lack the indexed source-specific multicast API. Use the
+ * address path consistently in that case, including interface resolution.
+ */
+#ifndef UDPXY_MCAST_IFINDEX
+#if defined(__linux__) && defined(MCAST_JOIN_SOURCE_GROUP) && defined(MCAST_LEAVE_SOURCE_GROUP)
+#define UDPXY_MCAST_IFINDEX 1
+#else
+#define UDPXY_MCAST_IFINDEX 0
+#endif
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +61,7 @@ setup_listener( const char* ipaddr, int port, int* sockfd, int bklog );
 int
 setup_mcast_listener( struct sockaddr_in*   s_address,
                       struct sockaddr_in*   m_address,
-                      const struct in_addr* mifaddr,
+                      const struct mcast_iface* mifaddr,
                       int*                  mcastfd,
                       int                   sockbuflen );
 
@@ -51,20 +70,20 @@ setup_mcast_listener( struct sockaddr_in*   s_address,
  *
  */
 void
-close_mcast_listener( int msockfd, const struct in_addr* mifaddr, const struct in_addr* s_in_addr );
+close_mcast_listener( int msockfd, const struct mcast_iface* mifaddr, const struct in_addr* s_in_addr );
 
 
 /* add or drop membership in a multicast group
  */
 int
-set_multicast( int msockfd, const struct in_addr* mifaddr,
+set_multicast( int msockfd, const struct mcast_iface* mifaddr,
                const struct in_addr* s_in_addr, char* opname );
 
 
 /* drop from and add into a multicast group
  */
 int
-renew_multicast( int msockfd, const struct in_addr* mifaddr, const struct in_addr* s_in_addr);
+renew_multicast( int msockfd, const struct mcast_iface* mifaddr, const struct in_addr* s_in_addr);
 
 
 /* set send/receive timeouts on socket(s)

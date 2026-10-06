@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <net/if.h>
 
 #include "udpxy.h"
 #include "dpkt.h"
@@ -82,6 +83,7 @@ struct server_ctx
     char        listen_addr[ IPADDR_STR_SIZE ];
     uint16_t    listen_port;
     char        mcast_ifc_addr[ IPADDR_STR_SIZE ];
+    char        mcast_ifname[ IFNAMSIZ ];
     struct in_addr
                 mcast_inaddr;
 
@@ -105,7 +107,8 @@ init_server_ctx( struct server_ctx* ctx,
                  const size_t       max,
                  const char*        laddr,
                  uint16_t           lport,
-                 const char*        mifc_addr );
+                 const char*        mifc_addr,
+                 const char*        mifc_name );
 
 /* release server context
  */

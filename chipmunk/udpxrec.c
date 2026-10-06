@@ -68,7 +68,7 @@ struct udpxrec_opt g_recopt;
 static char g_app_info[ 80 ] = {0};
 
 static void check_mcast_refresh( int msockfd, time_t* last_tm,
-                     const struct in_addr* mifaddr,
+                     const struct mcast_iface* mifaddr,
                      const struct in_addr* s_in_addr)
 {
     time_t now = 0;
@@ -273,7 +273,7 @@ calc_buf_settings( ssize_t* bufmsgs, size_t* sock_buflen )
 /* subscribe to the (configured) multicast channel
  */
 static int
-subscribe( int* sockfd, struct in_addr* mcast_inaddr, struct sockaddr_in* s_address )
+subscribe( int* sockfd, struct mcast_iface* mcast_inaddr, struct sockaddr_in* s_address )
 {
     struct sockaddr_in m_address;
     const char* ipaddr = g_recopt.rec_channel;
@@ -302,7 +302,8 @@ subscribe( int* sockfd, struct in_addr* mcast_inaddr, struct sockaddr_in* s_addr
     m_address.sin_family = AF_INET;
     m_address.sin_port = htons( (uint16_t)g_recopt.rec_port );
 
-    if( 1 != inet_aton( g_recopt.mcast_addr, mcast_inaddr ) ) {
+    memset(mcast_inaddr, 0, sizeof(*mcast_inaddr));
+    if( 1 != inet_aton( g_recopt.mcast_addr, &mcast_inaddr->addr ) ) {
         mperror( g_flog, errno,
                 "%s: Invalid multicast interface: [%s]: inet_aton",
                 __func__, g_recopt.mcast_addr );
@@ -323,7 +324,7 @@ static int
 record()
 {
     int rsock = -1, destfd = -1, rc = 0, wtime_sec = 0;
-    struct in_addr raddr;
+    struct mcast_iface raddr;
     struct sockaddr_in saddr;
     struct timeval rtv;
     struct dstream_ctx ds;
@@ -491,7 +492,7 @@ record()
 static int
 verify_channel()
 {
-    struct in_addr mcast_inaddr;
+    struct mcast_iface mcast_inaddr;
     struct sockaddr_in saddr;
     int sockfd = -1, rc = -1;
     char buf[16];

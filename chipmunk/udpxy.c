@@ -98,7 +98,7 @@ static const int PID_RESET = 1;
 
 /* process client requests - implemented in sloop.c */
 extern int srv_loop (const char* ipaddr, int port,
-                    const char* mcast_addr);
+                    const char* mcast_addr, const char* mcast_ifname);
 
 /* handler for signals to perform a graceful exit
  */
@@ -348,7 +348,7 @@ send_http_response( int sockfd, int code, const char* reason)
  */
 static void
 check_mcast_refresh( int msockfd, time_t* last_tm,
-                     const struct in_addr* mifaddr,
+                     const struct mcast_iface* mifaddr,
                      const struct in_addr* s_in_addr)
 {
     time_t now = 0;
@@ -496,7 +496,7 @@ sync_dsockbuf_len( int ssockfd, int dsockfd )
  */
 static int
 relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
-               int dfilefd, const struct in_addr* mifaddr, const struct in_addr* s_in_addr)
+               int dfilefd, const struct mcast_iface* mifaddr, const struct in_addr* s_in_addr)
 {
     volatile sig_atomic_t quit = 0;
 
@@ -659,6 +659,36 @@ relay_traffic( int ssockfd, int dsockfd, struct server_ctx* ctx,
 }
 
 
+/* Resolve the configured interface for a new socket, not at daemon startup.
+ * Keep this result for join, leave and renewal of that socket. IPv4 aliases
+ * and non-Linux systems use a fresh address lookup instead of an index.
+ */
+static int
+resolve_mcast_iface( const struct server_ctx* ctx, struct mcast_iface* iface )
+{
+    char addr[IPADDR_STR_SIZE];
+
+    memset(iface, 0, sizeof(*iface));
+    if (!ctx->mcast_ifname[0]) {
+        iface->addr = ctx->mcast_inaddr;
+        return 0;
+    }
+
+#if UDPXY_MCAST_IFINDEX
+    iface->index = if_nametoindex(ctx->mcast_ifname);
+    if (iface->index) return 0;
+#endif
+
+    if (get_ipv4_address(ctx->mcast_ifname, addr, sizeof(addr)) != 0 ||
+        inet_aton(addr, &iface->addr) != 1) {
+        (void) tmfprintf(g_flog, "Cannot resolve multicast interface: [%s]\n",
+                        ctx->mcast_ifname);
+        return ERR_INTERNAL;
+    }
+    return 0;
+}
+
+
 /* process command to relay udp traffic
  *
  */
@@ -677,10 +707,12 @@ udp_relay( int sockfd, struct server_ctx* ctx )
                 dfilefd = -1, srcfd = -1;
     char        dfile_name[ MAXPATHLEN ];
     size_t      rcvbuf_len = 0;
-    const struct in_addr *mifaddr;
+    struct mcast_iface iface;
+    const struct mcast_iface *mifaddr = &iface;
 
     assert( (sockfd > 0) && ctx );
-    mifaddr = &(ctx->mcast_inaddr);
+    memset(&iface, 0, sizeof(iface));
+    iface.addr = ctx->mcast_inaddr;
 
 
     TRACE( (void)tmfprintf( g_flog, "udp_relay : new_socket=[%d] param=[%s]\n",
@@ -779,6 +811,8 @@ udp_relay( int sockfd, struct server_ctx* ctx )
             }
         }
         else {
+            rc = resolve_mcast_iface(ctx, &iface);
+            if (rc != 0) break;
             rc = calc_buf_settings( NULL, &rcvbuf_len );
             if (0 == rc ) {
                 rc = setup_mcast_listener( &s_addr, &m_addr, mifaddr, &msockfd,
@@ -1204,6 +1238,8 @@ udpxy_main( int argc, char* const argv[] )
 
     char ipaddr[IPADDR_STR_SIZE] = "\0",
          mcast_addr[IPADDR_STR_SIZE] = "\0";
+    char mcast_ifname[IFNAMSIZ] = "\0";
+    struct in_addr mcast_param;
 
     char pidfile[ MAXPATHLEN ] = "\0";
     u_short MIN_MCAST_REFRESH = 0, MAX_MCAST_REFRESH = 0;
@@ -1250,8 +1286,17 @@ udpxy_main( int argc, char* const argv[] )
                       break;
 
             case 'm':
+                      mcast_ifname[0] = '\0';
                       rc = get_ipv4_address( optarg, mcast_addr,
                               sizeof(mcast_addr) );
+                      if (rc == 0 && inet_aton(optarg, &mcast_param) != 1) {
+                          if (strlen(optarg) >= sizeof(mcast_ifname)) {
+                              rc = ERR_PARAM;
+                          }
+                          else {
+                              strcpy(mcast_ifname, optarg);
+                          }
+                      }
                       if( 0 != rc ) {
                         (void) fprintf( stderr, "Invalid multicast address: "
                                 "[%s]\n", optarg );
@@ -1468,7 +1513,7 @@ udpxy_main( int argc, char* const argv[] )
         syslog( LOG_NOTICE, "%s is starting\n", g_app_info );
         TRACE( printcmdln( g_flog, g_app_info, argc, argv ) );
 
-        rc = srv_loop( ipaddr, port, mcast_addr );
+        rc = srv_loop( ipaddr, port, mcast_addr, mcast_ifname );
 
         syslog( LOG_NOTICE, "%s is exiting with rc=[%d]\n",
                 g_app_info, rc);

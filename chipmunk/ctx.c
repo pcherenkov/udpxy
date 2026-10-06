@@ -50,11 +50,12 @@ int
 init_server_ctx( struct server_ctx* ctx,
                  const size_t max,
                  const char* laddr, uint16_t lport,
-                 const char* mifc_addr )
+                 const char* mifc_addr,
+                 const char* mifc_name )
 {
     int flags = -1;
 
-    assert( lport && mifc_addr && ctx && max );
+    assert( lport && mifc_addr && mifc_name && ctx && max );
 
     ctx->lsockfd = 0;
     (void) strncpy( ctx->listen_addr, (laddr ? laddr : IPv4_ALL),
@@ -65,6 +66,8 @@ init_server_ctx( struct server_ctx* ctx,
 
     (void) strncpy( ctx->mcast_ifc_addr, mifc_addr, IPADDR_STR_SIZE );
     ctx->mcast_ifc_addr[ IPADDR_STR_SIZE - 1 ] = '\0';
+    (void) strncpy( ctx->mcast_ifname, mifc_name, sizeof(ctx->mcast_ifname) );
+    ctx->mcast_ifname[ sizeof(ctx->mcast_ifname) - 1 ] = '\0';
 
     ctx->cl = calloc(max, sizeof(struct client_ctx));
     if( NULL == ctx->cl ) {

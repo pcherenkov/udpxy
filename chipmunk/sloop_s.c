@@ -55,7 +55,7 @@ struct server_ctx  g_srv;
 /* process client requests */
 int
 srv_loop( const char* ipaddr, int port,
-             const char* mcast_addr )
+             const char* mcast_addr, const char* mcast_ifname )
 {
     int                 rc, maxfd, err, nrdy, i;
     struct in_addr      mcast_inaddr;
@@ -83,7 +83,8 @@ srv_loop( const char* ipaddr, int port,
     }
 
     init_server_ctx( &g_srv, g_uopt.max_clients,
-            (ipaddr[0] ? ipaddr : "0.0.0.0") , (uint16_t)port, mcast_addr );
+            (ipaddr[0] ? ipaddr : "0.0.0.0") , (uint16_t)port,
+            mcast_addr, mcast_ifname );
 
     g_srv.rcv_tmout = (u_short)g_uopt.rcv_tmout;
     g_srv.snd_tmout = RLY_SOCK_TIMEOUT;
